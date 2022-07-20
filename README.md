@@ -8,7 +8,7 @@ Tables allows you to manage you database tables in a more easier way .
 
 ## Features
 
-- 
+- 🚀 To Do
 - 
 - 
 
