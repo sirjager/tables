@@ -1,0 +1,15 @@
+.env
+**.env
+**.env.**
+!example.env
+
+logs
+local
+
+**.tmp
+**.tmp/**
+**.temp
+**.temp/**
+
+Makefile
+
