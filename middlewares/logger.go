@@ -9,9 +9,9 @@ import (
 
 func Logger() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
-		return fmt.Sprintf("[%s]-%s %s %d %s %s \n",
+		return fmt.Sprintf("[ %s ] >>> %s  %d  %s  %s \n",
 			params.TimeStamp.Format(time.RFC822),
-			params.ClientIP,
+			// params.ClientIP,
 			params.Method,
 			params.StatusCode,
 			params.Latency,
