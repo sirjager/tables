@@ -18,7 +18,7 @@ import (
 func main() {
 	PORT := os.Getenv("PORT")
 	if PORT == "" {
-		log.Fatal("PORT must not be empty in release mode")
+		log.Fatal("PORT must not be empty in release mode ")
 	}
 	c, err := config.LoadServerConfig()
 	if err != nil {
