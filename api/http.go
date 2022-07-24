@@ -57,6 +57,7 @@ type MessageResponse struct {
 func (server *HttpServer) setupHttpRouter() {
 	router := gin.New()
 	router.Use(middlewares.Logger())
+	router.Use(middlewares.Cors())
 	authenticatedRoute := router.Group("/")
 	unauthenticatedRoute := router.Group("/")
 
