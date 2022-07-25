@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SirJager/tables/service/core/crypt"
 	repo "github.com/SirJager/tables/service/core/repo"
+	"github.com/SirJager/tables/service/core/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -68,7 +68,7 @@ func (server *HttpServer) createUser(ctx *gin.Context) {
 		return
 	}
 	// Hash Password
-	hashedPassword, err := crypt.HashPassword(req.Password)
+	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -164,7 +164,7 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	}
 	// This will send back error if password do not match
 
-	err = crypt.VerifyPassword(password.Password, dbuser.Password)
+	err = utils.VerifyPassword(password.Password, dbuser.Password)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid credentials"})
 		return
