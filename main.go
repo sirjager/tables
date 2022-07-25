@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"log"
-	"os"
 	"strings"
 
 	api "github.com/SirJager/tables/api"
@@ -16,11 +15,7 @@ import (
 )
 
 func main() {
-	PORT := os.Getenv("PORT")
-	if PORT == "" {
-		log.Fatal("PORT must not be empty in release mode ")
-	}
-	c, err := config.LoadServerConfig()
+	c, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatal("Could not load server conifg :", err)
 	}
@@ -36,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
-	err = httpServer.Start(":" + PORT)
+	err = httpServer.Start(":" + c.Port)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}

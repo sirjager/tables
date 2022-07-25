@@ -7,6 +7,8 @@ import (
 )
 
 type ServerConfig struct {
+	Port         string `mapstructure:"PORT"`
+	GinMode      string `mapstructure:"GIN_MODE"`
 	DBSource     string `mapstructure:"DATABASE_URL"`
 	MigrationURL string `mapstructure:"MIGRATION_URL"`
 	//
@@ -15,12 +17,15 @@ type ServerConfig struct {
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
-func LoadServerConfig() (config ServerConfig, err error) {
-	viper.BindEnv("DATABASE_URL")
-	viper.BindEnv("MIGRATION_URL")
-	viper.BindEnv("TOKEN_SECRET_KEY")
-	viper.BindEnv("ACCESS_TOKEN_DURATION")
-	viper.BindEnv("REFRESH_TOKEN_DURATION")
+func LoadConfig(envpath string) (config ServerConfig, err error) {
+	viper.AddConfigPath(envpath)
+	viper.SetConfigName("local")
+	viper.SetConfigType("env")
+	viper.AutomaticEnv()
+	err = viper.ReadInConfig()
+	if err != nil {
+		return
+	}
 	err = viper.Unmarshal(&config)
 	return
 }

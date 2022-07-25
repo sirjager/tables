@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/SirJager/tables/config"
 	"github.com/SirJager/tables/middlewares"
@@ -13,8 +12,8 @@ import (
 )
 
 func init() {
-	MODE := os.Getenv("GIN_MODE")
-	if MODE != gin.DebugMode {
+	c, _ := config.LoadConfig(".")
+	if c.GinMode != gin.DebugMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 }
