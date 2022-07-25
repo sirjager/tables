@@ -20,7 +20,7 @@ func (server *HttpServer) createTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	mytable, err := server.store.CreateTableTx(ctx, repo.CreateTableTxParams{TableName: req.TableName, Uid: req.Uid, Columns: req.Columns})
+	mytable, err := server.store.CreateTableTx(ctx, repo.CreateTableTxParams{Name: req.TableName, UserID: req.Uid, Columns: req.Columns})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
