@@ -43,7 +43,7 @@ func TestCreateTableTx(t *testing.T) {
 		require.Equal(t, arg.UserID, createdTable.UserID)
 		require.NotZero(t, createdTable.ID)
 
-		foundCreatedTable, err := store.GetCoreTableWithTid(context.Background(), createdTable.ID)
+		foundCreatedTable, err := store.GetTable(context.Background(), createdTable.ID)
 		require.NoError(t, err)
 		require.NotEmpty(t, foundCreatedTable)
 
@@ -95,7 +95,7 @@ func TestDropTableTx(t *testing.T) {
 
 	require.Equal(t, count, len(createdTableNames))
 	for _, name := range createdTableNames {
-		err := store.DropTableTx(context.Background(), RemoveCoreTableWithUidAndNameParams{UserID: user.ID, Name: name})
+		err := store.DropTableTx(context.Background(), DeleteTableWhereUserAndNameParams{UserID: user.ID, Name: name})
 		require.NoError(t, err)
 	}
 }

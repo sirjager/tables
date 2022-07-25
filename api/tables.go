@@ -39,7 +39,7 @@ func (server *HttpServer) listTables(ctx *gin.Context) {
 		return
 	}
 
-	res, err := server.store.ListCoreTablesWithUid(ctx, req.User)
+	res, err := server.store.GetTablesWhereUser(ctx, req.User)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -67,7 +67,7 @@ func (server *HttpServer) getTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	res, err := server.store.GetCoreTableWithName(ctx, req.Table)
+	res, err := server.store.GetTableWhereName(ctx, req.Table)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -93,7 +93,7 @@ func (server *HttpServer) deleteTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err := server.store.DropTableTx(ctx, repo.RemoveCoreTableWithUidAndNameParams{UserID: req.User, Name: req.Table})
+	err := server.store.DropTableTx(ctx, repo.DeleteTableWhereUserAndNameParams{UserID: req.User, Name: req.Table})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return

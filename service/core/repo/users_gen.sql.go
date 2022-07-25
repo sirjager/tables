@@ -9,12 +9,12 @@ import (
 	"context"
 )
 
-const addCoreUser = `-- name: AddCoreUser :one
+const createUser = `-- name: CreateUser :one
 
 INSERT INTO "public"."core_users" (email,username,password,fullname) VALUES ($1, $2, $3, $4) RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type AddCoreUserParams struct {
+type CreateUserParams struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -22,8 +22,8 @@ type AddCoreUserParams struct {
 }
 
 // ------------------------------ ADD ONE CORE_USERS <-> CORE_USER  ------------------------------
-func (q *Queries) AddCoreUser(ctx context.Context, arg AddCoreUserParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, addCoreUser,
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Email,
 		arg.Username,
 		arg.Password,
@@ -45,235 +45,108 @@ func (q *Queries) AddCoreUser(ctx context.Context, arg AddCoreUserParams) (CoreU
 	return i, err
 }
 
-const getCoreUserWithEmail = `-- name: GetCoreUserWithEmail :one
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE email = $1 LIMIT 1
-`
-
-func (q *Queries) GetCoreUserWithEmail(ctx context.Context, email string) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, getCoreUserWithEmail, email)
-	var i CoreUser
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Username,
-		&i.Password,
-		&i.Fullname,
-		&i.Public,
-		&i.Verified,
-		&i.Blocked,
-		&i.Updated,
-		&i.Created,
-	)
-	return i, err
-}
-
-const getCoreUserWithUid = `-- name: GetCoreUserWithUid :one
-
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE id = $1 LIMIT 1
-`
-
-// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
-func (q *Queries) GetCoreUserWithUid(ctx context.Context, id int64) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, getCoreUserWithUid, id)
-	var i CoreUser
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Username,
-		&i.Password,
-		&i.Fullname,
-		&i.Public,
-		&i.Verified,
-		&i.Blocked,
-		&i.Updated,
-		&i.Created,
-	)
-	return i, err
-}
-
-const getCoreUserWithUsername = `-- name: GetCoreUserWithUsername :one
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE username = $1 LIMIT 1
-`
-
-func (q *Queries) GetCoreUserWithUsername(ctx context.Context, username string) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, getCoreUserWithUsername, username)
-	var i CoreUser
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Username,
-		&i.Password,
-		&i.Fullname,
-		&i.Public,
-		&i.Verified,
-		&i.Blocked,
-		&i.Updated,
-		&i.Created,
-	)
-	return i, err
-}
-
-const listCoreUsers = `-- name: ListCoreUsers :many
-
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users"
-`
-
-// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
-func (q *Queries) ListCoreUsers(ctx context.Context) ([]CoreUser, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []CoreUser{}
-	for rows.Next() {
-		var i CoreUser
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.Username,
-			&i.Password,
-			&i.Fullname,
-			&i.Public,
-			&i.Verified,
-			&i.Blocked,
-			&i.Updated,
-			&i.Created,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCoreUsersWithLimit = `-- name: ListCoreUsersWithLimit :many
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" LIMIT $1::int
-`
-
-func (q *Queries) ListCoreUsersWithLimit(ctx context.Context, limit int32) ([]CoreUser, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreUsersWithLimit, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []CoreUser{}
-	for rows.Next() {
-		var i CoreUser
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.Username,
-			&i.Password,
-			&i.Fullname,
-			&i.Public,
-			&i.Verified,
-			&i.Blocked,
-			&i.Updated,
-			&i.Created,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCoreUsersWithLimitOffset = `-- name: ListCoreUsersWithLimitOffset :many
-SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" LIMIT $2::int OFFSET $1::int
-`
-
-type ListCoreUsersWithLimitOffsetParams struct {
-	Offset int32 `json:"offset_"`
-	Limit  int32 `json:"limit_"`
-}
-
-func (q *Queries) ListCoreUsersWithLimitOffset(ctx context.Context, arg ListCoreUsersWithLimitOffsetParams) ([]CoreUser, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreUsersWithLimitOffset, arg.Offset, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []CoreUser{}
-	for rows.Next() {
-		var i CoreUser
-		if err := rows.Scan(
-			&i.ID,
-			&i.Email,
-			&i.Username,
-			&i.Password,
-			&i.Fullname,
-			&i.Public,
-			&i.Verified,
-			&i.Blocked,
-			&i.Updated,
-			&i.Created,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const removeCoreUserWithEmail = `-- name: RemoveCoreUserWithEmail :exec
-DELETE FROM "public"."core_users" WHERE email = $1
-`
-
-func (q *Queries) RemoveCoreUserWithEmail(ctx context.Context, email string) error {
-	_, err := q.db.ExecContext(ctx, removeCoreUserWithEmail, email)
-	return err
-}
-
-const removeCoreUserWithUid = `-- name: RemoveCoreUserWithUid :exec
+const deleteUser = `-- name: DeleteUser :exec
 
 DELETE FROM "public"."core_users" WHERE id = $1
 `
 
 // ------------------------------ REMOVE ONE CORE_USERS -> nil  ------------------------------
-func (q *Queries) RemoveCoreUserWithUid(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, removeCoreUserWithUid, id)
+func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
 
-const removeCoreUserWithUsername = `-- name: RemoveCoreUserWithUsername :exec
-DELETE FROM "public"."core_users" WHERE username = $1
+const getAllUsers = `-- name: GetAllUsers :many
+
+SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users"
 `
 
-func (q *Queries) RemoveCoreUserWithUsername(ctx context.Context, username string) error {
-	_, err := q.db.ExecContext(ctx, removeCoreUserWithUsername, username)
-	return err
+// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
+func (q *Queries) GetAllUsers(ctx context.Context) ([]CoreUser, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CoreUser{}
+	for rows.Next() {
+		var i CoreUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Username,
+			&i.Password,
+			&i.Fullname,
+			&i.Public,
+			&i.Verified,
+			&i.Blocked,
+			&i.Updated,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const updateCoreUserBlocked = `-- name: UpdateCoreUserBlocked :one
-UPDATE "public"."core_users" SET blocked = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
+const getSomeUsers = `-- name: GetSomeUsers :many
+SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" LIMIT $2::int OFFSET $1::int
 `
 
-type UpdateCoreUserBlockedParams struct {
-	Blocked bool  `json:"blocked"`
-	ID      int64 `json:"id"`
+type GetSomeUsersParams struct {
+	Offset int32 `json:"offset_"`
+	Limit  int32 `json:"limit_"`
 }
 
-func (q *Queries) UpdateCoreUserBlocked(ctx context.Context, arg UpdateCoreUserBlockedParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserBlocked, arg.Blocked, arg.ID)
+func (q *Queries) GetSomeUsers(ctx context.Context, arg GetSomeUsersParams) ([]CoreUser, error) {
+	rows, err := q.db.QueryContext(ctx, getSomeUsers, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CoreUser{}
+	for rows.Next() {
+		var i CoreUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Username,
+			&i.Password,
+			&i.Fullname,
+			&i.Public,
+			&i.Verified,
+			&i.Blocked,
+			&i.Updated,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUser = `-- name: GetUser :one
+
+SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE id = $1 LIMIT 1
+`
+
+// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
+func (q *Queries) GetUser(ctx context.Context, id int64) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,
@@ -290,19 +163,90 @@ func (q *Queries) UpdateCoreUserBlocked(ctx context.Context, arg UpdateCoreUserB
 	return i, err
 }
 
-const updateCoreUserName = `-- name: UpdateCoreUserName :one
+const getUserWhereEmail = `-- name: GetUserWhereEmail :one
+SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE email = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserWhereEmail(ctx context.Context, email string) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, getUserWhereEmail, email)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Fullname,
+		&i.Public,
+		&i.Verified,
+		&i.Blocked,
+		&i.Updated,
+		&i.Created,
+	)
+	return i, err
+}
+
+const getUserWhereUsername = `-- name: GetUserWhereUsername :one
+SELECT id, email, username, password, fullname, public, verified, blocked, updated, created FROM "public"."core_users" WHERE username = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserWhereUsername(ctx context.Context, username string) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, getUserWhereUsername, username)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Fullname,
+		&i.Public,
+		&i.Verified,
+		&i.Blocked,
+		&i.Updated,
+		&i.Created,
+	)
+	return i, err
+}
+
+const updateUserBlocked = `-- name: UpdateUserBlocked :one
+UPDATE "public"."core_users" SET blocked = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
+`
+
+type UpdateUserBlockedParams struct {
+	Blocked bool  `json:"blocked"`
+	ID      int64 `json:"id"`
+}
+
+func (q *Queries) UpdateUserBlocked(ctx context.Context, arg UpdateUserBlockedParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserBlocked, arg.Blocked, arg.ID)
+	var i CoreUser
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Fullname,
+		&i.Public,
+		&i.Verified,
+		&i.Blocked,
+		&i.Updated,
+		&i.Created,
+	)
+	return i, err
+}
+
+const updateUserFullName = `-- name: UpdateUserFullName :one
 
 UPDATE "public"."core_users" SET fullname = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type UpdateCoreUserNameParams struct {
+type UpdateUserFullNameParams struct {
 	Fullname string `json:"fullname"`
 	ID       int64  `json:"id"`
 }
 
 // ------------------------------ UPDATE ONE CORE_USERS <-> CORE_USERS  ------------------------------
-func (q *Queries) UpdateCoreUserName(ctx context.Context, arg UpdateCoreUserNameParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserName, arg.Fullname, arg.ID)
+func (q *Queries) UpdateUserFullName(ctx context.Context, arg UpdateUserFullNameParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserFullName, arg.Fullname, arg.ID)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,
@@ -319,17 +263,17 @@ func (q *Queries) UpdateCoreUserName(ctx context.Context, arg UpdateCoreUserName
 	return i, err
 }
 
-const updateCoreUserPassword = `-- name: UpdateCoreUserPassword :one
+const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE "public"."core_users" SET password = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type UpdateCoreUserPasswordParams struct {
+type UpdateUserPasswordParams struct {
 	Password string `json:"password"`
 	ID       int64  `json:"id"`
 }
 
-func (q *Queries) UpdateCoreUserPassword(ctx context.Context, arg UpdateCoreUserPasswordParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserPassword, arg.Password, arg.ID)
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.Password, arg.ID)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,
@@ -346,17 +290,17 @@ func (q *Queries) UpdateCoreUserPassword(ctx context.Context, arg UpdateCoreUser
 	return i, err
 }
 
-const updateCoreUserPublic = `-- name: UpdateCoreUserPublic :one
+const updateUserPublic = `-- name: UpdateUserPublic :one
 UPDATE "public"."core_users" SET public = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type UpdateCoreUserPublicParams struct {
+type UpdateUserPublicParams struct {
 	Public bool  `json:"public"`
 	ID     int64 `json:"id"`
 }
 
-func (q *Queries) UpdateCoreUserPublic(ctx context.Context, arg UpdateCoreUserPublicParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserPublic, arg.Public, arg.ID)
+func (q *Queries) UpdateUserPublic(ctx context.Context, arg UpdateUserPublicParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPublic, arg.Public, arg.ID)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,
@@ -373,17 +317,17 @@ func (q *Queries) UpdateCoreUserPublic(ctx context.Context, arg UpdateCoreUserPu
 	return i, err
 }
 
-const updateCoreUserUsername = `-- name: UpdateCoreUserUsername :one
+const updateUserUsername = `-- name: UpdateUserUsername :one
 UPDATE "public"."core_users" SET username = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type UpdateCoreUserUsernameParams struct {
+type UpdateUserUsernameParams struct {
 	Username string `json:"username"`
 	ID       int64  `json:"id"`
 }
 
-func (q *Queries) UpdateCoreUserUsername(ctx context.Context, arg UpdateCoreUserUsernameParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserUsername, arg.Username, arg.ID)
+func (q *Queries) UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserUsername, arg.Username, arg.ID)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,
@@ -400,17 +344,17 @@ func (q *Queries) UpdateCoreUserUsername(ctx context.Context, arg UpdateCoreUser
 	return i, err
 }
 
-const updateCoreUserVerified = `-- name: UpdateCoreUserVerified :one
+const updateUserVerified = `-- name: UpdateUserVerified :one
 UPDATE "public"."core_users" SET verified = $1 WHERE id = $2 RETURNING id, email, username, password, fullname, public, verified, blocked, updated, created
 `
 
-type UpdateCoreUserVerifiedParams struct {
+type UpdateUserVerifiedParams struct {
 	Verified bool  `json:"verified"`
 	ID       int64 `json:"id"`
 }
 
-func (q *Queries) UpdateCoreUserVerified(ctx context.Context, arg UpdateCoreUserVerifiedParams) (CoreUser, error) {
-	row := q.db.QueryRowContext(ctx, updateCoreUserVerified, arg.Verified, arg.ID)
+func (q *Queries) UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (CoreUser, error) {
+	row := q.db.QueryRowContext(ctx, updateUserVerified, arg.Verified, arg.ID)
 	var i CoreUser
 	err := row.Scan(
 		&i.ID,

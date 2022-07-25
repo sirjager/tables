@@ -12,14 +12,14 @@ import (
 	"github.com/google/uuid"
 )
 
-const addSession = `-- name: AddSession :one
+const createSession = `-- name: CreateSession :one
 
 INSERT INTO "public"."core_sessions" 
 (id,user_id,client_ip,user_agent,refresh_token,blocked,expires) 
 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created
 `
 
-type AddSessionParams struct {
+type CreateSessionParams struct {
 	ID           uuid.UUID `json:"id"`
 	UserID       int64     `json:"user_id"`
 	ClientIp     string    `json:"client_ip"`
@@ -30,8 +30,8 @@ type AddSessionParams struct {
 }
 
 // -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
-func (q *Queries) AddSession(ctx context.Context, arg AddSessionParams) (CoreSession, error) {
-	row := q.db.QueryRowContext(ctx, addSession,
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CoreSession, error) {
+	row := q.db.QueryRowContext(ctx, createSession,
 		arg.ID,
 		arg.UserID,
 		arg.ClientIp,

@@ -11,48 +11,44 @@ import (
 )
 
 type Querier interface {
-	// -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
-	AddCoreTable(ctx context.Context, arg AddCoreTableParams) (CoreTable, error)
-	// ------------------------------ ADD ONE CORE_USERS <-> CORE_USER  ------------------------------
-	AddCoreUser(ctx context.Context, arg AddCoreUserParams) (CoreUser, error)
 	// -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
-	AddSession(ctx context.Context, arg AddSessionParams) (CoreSession, error)
-	GetCoreTableWithName(ctx context.Context, name string) (CoreTable, error)
-	// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-	GetCoreTableWithTid(ctx context.Context, id int64) (CoreTable, error)
-	GetCoreTableWithTidAndUid(ctx context.Context, arg GetCoreTableWithTidAndUidParams) (CoreTable, error)
-	GetCoreUserWithEmail(ctx context.Context, email string) (CoreUser, error)
-	// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
-	GetCoreUserWithUid(ctx context.Context, id int64) (CoreUser, error)
-	GetCoreUserWithUsername(ctx context.Context, username string) (CoreUser, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (CoreSession, error)
+	// -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
+	CreateTable(ctx context.Context, arg CreateTableParams) (CoreTable, error)
+	// ------------------------------ ADD ONE CORE_USERS <-> CORE_USER  ------------------------------
+	CreateUser(ctx context.Context, arg CreateUserParams) (CoreUser, error)
+	// -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
+	DeleteTable(ctx context.Context, id int64) error
+	DeleteTableWhereUserAndName(ctx context.Context, arg DeleteTableWhereUserAndNameParams) error
+	DeleteTablesWhereUser(ctx context.Context, userID int64) error
+	// ------------------------------ REMOVE ONE CORE_USERS -> nil  ------------------------------
+	DeleteUser(ctx context.Context, id int64) error
+	// ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
+	GetAllTables(ctx context.Context) ([]CoreTable, error)
+	// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
+	GetAllUsers(ctx context.Context) ([]CoreUser, error)
 	// -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
 	GetSession(ctx context.Context, id uuid.UUID) (CoreSession, error)
-	// ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
-	ListCoreTables(ctx context.Context) ([]CoreTable, error)
-	ListCoreTablesWithLimit(ctx context.Context, limit int32) ([]CoreTable, error)
-	ListCoreTablesWithLimitOffset(ctx context.Context, arg ListCoreTablesWithLimitOffsetParams) ([]CoreTable, error)
+	GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([]CoreTable, error)
+	GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]CoreTable, error)
+	GetSomeUsers(ctx context.Context, arg GetSomeUsersParams) ([]CoreUser, error)
+	// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
+	GetTable(ctx context.Context, id int64) (CoreTable, error)
+	GetTableWhereIDAndUser(ctx context.Context, arg GetTableWhereIDAndUserParams) (CoreTable, error)
+	GetTableWhereName(ctx context.Context, name string) (CoreTable, error)
 	// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
-	ListCoreTablesWithUid(ctx context.Context, userID int64) ([]CoreTable, error)
-	ListCoreTablesWithUidWithLimit(ctx context.Context, arg ListCoreTablesWithUidWithLimitParams) ([]CoreTable, error)
-	ListCoreTablesWithUidWithLimitOffset(ctx context.Context, arg ListCoreTablesWithUidWithLimitOffsetParams) ([]CoreTable, error)
-	// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
-	ListCoreUsers(ctx context.Context) ([]CoreUser, error)
-	ListCoreUsersWithLimit(ctx context.Context, limit int32) ([]CoreUser, error)
-	ListCoreUsersWithLimitOffset(ctx context.Context, arg ListCoreUsersWithLimitOffsetParams) ([]CoreUser, error)
-	RemoveCoreTableWithUidAndName(ctx context.Context, arg RemoveCoreTableWithUidAndNameParams) error
-	// -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
-	RemoveCoreTableWithUidAndTid(ctx context.Context, arg RemoveCoreTableWithUidAndTidParams) error
-	RemoveCoreUserWithEmail(ctx context.Context, email string) error
-	// ------------------------------ REMOVE ONE CORE_USERS -> nil  ------------------------------
-	RemoveCoreUserWithUid(ctx context.Context, id int64) error
-	RemoveCoreUserWithUsername(ctx context.Context, username string) error
-	UpdateCoreUserBlocked(ctx context.Context, arg UpdateCoreUserBlockedParams) (CoreUser, error)
+	GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreTable, error)
+	// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
+	GetUser(ctx context.Context, id int64) (CoreUser, error)
+	GetUserWhereEmail(ctx context.Context, email string) (CoreUser, error)
+	GetUserWhereUsername(ctx context.Context, username string) (CoreUser, error)
+	UpdateUserBlocked(ctx context.Context, arg UpdateUserBlockedParams) (CoreUser, error)
 	// ------------------------------ UPDATE ONE CORE_USERS <-> CORE_USERS  ------------------------------
-	UpdateCoreUserName(ctx context.Context, arg UpdateCoreUserNameParams) (CoreUser, error)
-	UpdateCoreUserPassword(ctx context.Context, arg UpdateCoreUserPasswordParams) (CoreUser, error)
-	UpdateCoreUserPublic(ctx context.Context, arg UpdateCoreUserPublicParams) (CoreUser, error)
-	UpdateCoreUserUsername(ctx context.Context, arg UpdateCoreUserUsernameParams) (CoreUser, error)
-	UpdateCoreUserVerified(ctx context.Context, arg UpdateCoreUserVerifiedParams) (CoreUser, error)
+	UpdateUserFullName(ctx context.Context, arg UpdateUserFullNameParams) (CoreUser, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (CoreUser, error)
+	UpdateUserPublic(ctx context.Context, arg UpdateUserPublicParams) (CoreUser, error)
+	UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) (CoreUser, error)
+	UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (CoreUser, error)
 }
 
 var _ Querier = (*Queries)(nil)

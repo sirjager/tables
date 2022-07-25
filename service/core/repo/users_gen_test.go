@@ -10,12 +10,12 @@ import (
 )
 
 func createRandomUser(t *testing.T) CoreUser {
-	arg := AddCoreUserParams{
+	arg := CreateUserParams{
 		Email:    utils.RandomEmail(),
 		Username: utils.RandomUserName(),
 		Password: utils.RandomPassword(),
 	}
-	user, err := testQueries.AddCoreUser(context.Background(), arg)
+	user, err := testQueries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
@@ -35,10 +35,10 @@ func TestAddCoreUser(t *testing.T) {
 	createRandomUser(t)
 }
 
-func TestGetCoreUserWithEmail(t *testing.T) {
+func TestGetUser(t *testing.T) {
 	user := createRandomUser(t)
 
-	userInDb, err := testQueries.GetCoreUserWithEmail(context.Background(), user.Email)
+	userInDb, err := testQueries.GetUser(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, userInDb)
 	require.Equal(t, user.Email, userInDb.Email)
@@ -51,16 +51,16 @@ func TestGetCoreUserWithEmail(t *testing.T) {
 	require.Equal(t, user.Created, userInDb.Created)
 	require.Equal(t, user.Updated, userInDb.Updated)
 
-	userNotInDb, err := testQueries.GetCoreUserWithEmail(context.Background(), utils.RandomEmail())
+	userNotInDb, err := testQueries.GetUser(context.Background(), utils.RandomInt(1, 99999999999))
 	require.Error(t, err)
 	require.Empty(t, userNotInDb)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 }
 
-func TestGetCoreUserWithUid(t *testing.T) {
+func TestGetUserWhereEmail(t *testing.T) {
 	user := createRandomUser(t)
 
-	userInDb, err := testQueries.GetCoreUserWithUid(context.Background(), user.ID)
+	userInDb, err := testQueries.GetUserWhereEmail(context.Background(), user.Email)
 	require.NoError(t, err)
 	require.NotEmpty(t, userInDb)
 	require.Equal(t, user.Email, userInDb.Email)
@@ -73,16 +73,16 @@ func TestGetCoreUserWithUid(t *testing.T) {
 	require.Equal(t, user.Created, userInDb.Created)
 	require.Equal(t, user.Updated, userInDb.Updated)
 
-	userNotInDb, err := testQueries.GetCoreUserWithUid(context.Background(), utils.RandomInt(1, 99999999999))
+	userNotInDb, err := testQueries.GetUserWhereEmail(context.Background(), utils.RandomEmail())
 	require.Error(t, err)
 	require.Empty(t, userNotInDb)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 }
 
-func TestGetCoreUserWithUsername(t *testing.T) {
+func TestGetUserWhereUsername(t *testing.T) {
 	user := createRandomUser(t)
 
-	userInDb, err := testQueries.GetCoreUserWithUsername(context.Background(), user.Username)
+	userInDb, err := testQueries.GetUserWhereUsername(context.Background(), user.Username)
 	require.NoError(t, err)
 	require.NotEmpty(t, userInDb)
 	require.Equal(t, user.Email, userInDb.Email)
@@ -96,13 +96,13 @@ func TestGetCoreUserWithUsername(t *testing.T) {
 	require.Equal(t, user.Created, userInDb.Created)
 	require.Equal(t, user.Updated, userInDb.Updated)
 
-	userNotInDb, err := testQueries.GetCoreUserWithUsername(context.Background(), utils.RandomUserName())
+	userNotInDb, err := testQueries.GetUserWhereUsername(context.Background(), utils.RandomUserName())
 	require.Error(t, err)
 	require.Empty(t, userNotInDb)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 }
 
-func TestListCoreUsers(t *testing.T) {
+func TestGetAllUsers(t *testing.T) {
 	var createUsers []CoreUser
 	const totalUsers = 10
 	for i := 0; i < totalUsers; i++ {
@@ -110,7 +110,7 @@ func TestListCoreUsers(t *testing.T) {
 		createUsers = append(createUsers, user)
 	}
 
-	listedUsers, err := testQueries.ListCoreUsers(context.Background())
+	listedUsers, err := testQueries.GetAllUsers(context.Background())
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(listedUsers), totalUsers)
 
@@ -145,32 +145,7 @@ func TestListCoreUsers(t *testing.T) {
 	require.Equal(t, len(foundUserUids), totalUsers)
 }
 
-func TestListCoreUsersWithLimit(t *testing.T) {
-	const totalUsers = 5
-	const fetchOnly = 3
-
-	for i := 0; i < totalUsers; i++ {
-		createRandomUser(t)
-	}
-
-	listedUsersWithLimit, err := testQueries.ListCoreUsersWithLimit(context.Background(), fetchOnly)
-	require.NoError(t, err)
-	require.Equal(t, len(listedUsersWithLimit), fetchOnly)
-	for _, user := range listedUsersWithLimit {
-		require.NotEmpty(t, user)
-		require.NotEmpty(t, user.Email)
-		require.NotEmpty(t, user.Username)
-		require.NotEmpty(t, user.Password)
-		require.NotZero(t, user.ID)
-		require.False(t, user.Public)
-		require.False(t, user.Blocked)
-		require.False(t, user.Verified)
-		require.NotZero(t, user.Created)
-		require.NotZero(t, user.Updated)
-	}
-}
-
-func TestListCoreUsersWithLimitOffset(t *testing.T) {
+func TestGetSomeUsers(t *testing.T) {
 	const totalUsers = 5
 	const fetchOnly = 3
 	const offset_ = 3
@@ -179,8 +154,8 @@ func TestListCoreUsersWithLimitOffset(t *testing.T) {
 		createRandomUser(t)
 	}
 
-	listedUsersWithLimit, err := testQueries.ListCoreUsersWithLimitOffset(context.Background(),
-		ListCoreUsersWithLimitOffsetParams{Offset: offset_, Limit: fetchOnly})
+	listedUsersWithLimit, err := testQueries.GetSomeUsers(context.Background(),
+		GetSomeUsersParams{Offset: offset_, Limit: fetchOnly})
 	require.NoError(t, err)
 	require.Equal(t, len(listedUsersWithLimit), fetchOnly)
 	for _, user := range listedUsersWithLimit {
@@ -197,42 +172,19 @@ func TestListCoreUsersWithLimitOffset(t *testing.T) {
 	}
 }
 
-func TestRemoveCoreUserWithEmail(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	user := createRandomUser(t)
-
-	err := testQueries.RemoveCoreUserWithEmail(context.Background(), user.Email)
+	err := testQueries.DeleteUser(context.Background(), user.ID)
 	require.NoError(t, err)
-
-	userShouldBeDeleted, err := testQueries.GetCoreUserWithEmail(context.Background(), user.Email)
+	userShouldBeDeleted, err := testQueries.GetUser(context.Background(), user.ID)
 	require.Error(t, err)
 	require.Empty(t, userShouldBeDeleted)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 }
 
-func TestRemoveCoreUserWithUid(t *testing.T) {
+func TestUpdateUserBlocked(t *testing.T) {
 	user := createRandomUser(t)
-	err := testQueries.RemoveCoreUserWithUid(context.Background(), user.ID)
-	require.NoError(t, err)
-	userShouldBeDeleted, err := testQueries.GetCoreUserWithUid(context.Background(), user.ID)
-	require.Error(t, err)
-	require.Empty(t, userShouldBeDeleted)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
-}
-
-func TestRemoveCoreUserWithUsername(t *testing.T) {
-	user := createRandomUser(t)
-	err := testQueries.RemoveCoreUserWithUsername(context.Background(), user.Username)
-	require.NoError(t, err)
-
-	userShouldBeDeleted, err := testQueries.GetCoreUserWithUsername(context.Background(), user.Username)
-	require.Error(t, err)
-	require.Empty(t, userShouldBeDeleted)
-	require.EqualError(t, err, sql.ErrNoRows.Error())
-}
-
-func TestUpdateCoreUserBlocked(t *testing.T) {
-	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserBlocked(context.Background(), UpdateCoreUserBlockedParams{ID: user.ID, Blocked: true})
+	updatedUser, err := testQueries.UpdateUserBlocked(context.Background(), UpdateUserBlockedParams{ID: user.ID, Blocked: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Blocked, updatedUser.Blocked)
@@ -249,9 +201,9 @@ func TestUpdateCoreUserBlocked(t *testing.T) {
 	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
-func TestUpdateCoreUserPublic(t *testing.T) {
+func TestUpdateUserPublic(t *testing.T) {
 	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserPublic(context.Background(), UpdateCoreUserPublicParams{ID: user.ID, Public: true})
+	updatedUser, err := testQueries.UpdateUserPublic(context.Background(), UpdateUserPublicParams{ID: user.ID, Public: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Public, updatedUser.Public)
@@ -268,9 +220,9 @@ func TestUpdateCoreUserPublic(t *testing.T) {
 	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
-func TestUpdateCoreUserVerified(t *testing.T) {
+func TestUpdateUserVerified(t *testing.T) {
 	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserVerified(context.Background(), UpdateCoreUserVerifiedParams{ID: user.ID, Verified: true})
+	updatedUser, err := testQueries.UpdateUserVerified(context.Background(), UpdateUserVerifiedParams{ID: user.ID, Verified: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Verified, updatedUser.Verified)
@@ -287,11 +239,11 @@ func TestUpdateCoreUserVerified(t *testing.T) {
 	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
-func TestUpdateCoreUserName(t *testing.T) {
+func TestUpdateUserFullName(t *testing.T) {
 	user := createRandomUser(t)
 	newName := utils.RandomUserName()
 
-	updatedUser, err := testQueries.UpdateCoreUserName(context.Background(), UpdateCoreUserNameParams{ID: user.ID, Fullname: newName})
+	updatedUser, err := testQueries.UpdateUserFullName(context.Background(), UpdateUserFullNameParams{ID: user.ID, Fullname: newName})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Fullname, updatedUser.Fullname)
@@ -308,12 +260,12 @@ func TestUpdateCoreUserName(t *testing.T) {
 	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
-func TestUpdateCoreUserUsername(t *testing.T) {
+func TestUpdateUserUsername(t *testing.T) {
 	user := createRandomUser(t)
 
 	newUsername := utils.RandomUserName()
 
-	updatedUser, err := testQueries.UpdateCoreUserUsername(context.Background(), UpdateCoreUserUsernameParams{ID: user.ID, Username: newUsername})
+	updatedUser, err := testQueries.UpdateUserUsername(context.Background(), UpdateUserUsernameParams{ID: user.ID, Username: newUsername})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Username, updatedUser.Username)
@@ -330,11 +282,11 @@ func TestUpdateCoreUserUsername(t *testing.T) {
 	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
-func TestUpdateCoreUserPassword(t *testing.T) {
+func TestUpdateUserPassword(t *testing.T) {
 	user := createRandomUser(t)
 	newPassword := utils.RandomPassword()
 
-	updatedUser, err := testQueries.UpdateCoreUserPassword(context.Background(), UpdateCoreUserPasswordParams{ID: user.ID, Password: newPassword})
+	updatedUser, err := testQueries.UpdateUserPassword(context.Background(), UpdateUserPasswordParams{ID: user.ID, Password: newPassword})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Password, updatedUser.Password)

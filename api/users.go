@@ -73,8 +73,8 @@ func (server *HttpServer) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	arg := repo.AddCoreUserParams{Email: req.Email, Username: req.Username, Password: hashedPassword, Fullname: req.Fullname}
-	dbuser, err := server.store.AddCoreUser(ctx, arg)
+	arg := repo.CreateUserParams{Email: req.Email, Username: req.Username, Password: hashedPassword, Fullname: req.Fullname}
+	dbuser, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
@@ -144,7 +144,7 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
-		dbuser, err = server.store.GetCoreUserWithEmail(ctx, email.Email)
+		dbuser, err = server.store.GetUserWhereEmail(ctx, email.Email)
 	} else {
 		username := Username{Username: decodedIdentifier}
 		err = validate.Struct(username)
@@ -152,7 +152,7 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
-		dbuser, err = server.store.GetCoreUserWithUsername(ctx, username.Username)
+		dbuser, err = server.store.GetUserWhereUsername(ctx, username.Username)
 	}
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -182,7 +182,7 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	session, err := server.store.AddSession(ctx, repo.AddSessionParams{
+	session, err := server.store.CreateSession(ctx, repo.CreateSessionParams{
 		Expires:      refreshPayload.ExpiredAt,
 		UserAgent:    ctx.Request.UserAgent(),
 		ID:           refreshPayload.Id,
@@ -221,7 +221,7 @@ func (server *HttpServer) getUser(ctx *gin.Context) {
 		return
 	}
 
-	dbuser, err := server.store.GetCoreUserWithUid(ctx, req.User)
+	dbuser, err := server.store.GetUser(ctx, req.User)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
@@ -250,7 +250,7 @@ func (server *HttpServer) deleteUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err = server.store.RemoveCoreUserWithUid(ctx, req.Uid)
+	err = server.store.DeleteUser(ctx, req.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -278,20 +278,7 @@ func (server *HttpServer) listUsers(ctx *gin.Context) {
 
 	if req.Limit == 0 && req.Page == 0 {
 		//  [[ Returns All Users ]]   if req.Limit and req.Page == 0
-		dbusers, err := server.store.ListCoreUsers(ctx)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-			return
-		}
-		users := []userAsResponse{}
-		for _, dbuser := range dbusers {
-			users = append(users, removePassword(dbuser))
-		}
-		ctx.JSON(http.StatusOK, users)
-		return
-	} else if req.Limit > 0 && req.Page < 1 {
-		//  [[ Returns Limited User ]]
-		dbusers, err := server.store.ListCoreUsersWithLimit(ctx, req.Limit)
+		dbusers, err := server.store.GetAllUsers(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			return
@@ -306,11 +293,11 @@ func (server *HttpServer) listUsers(ctx *gin.Context) {
 
 	// ------------------------------------------------------------------------------------------------------------
 	// Returns Limited Users of request page (offset).
-	arg := repo.ListCoreUsersWithLimitOffsetParams{
+	arg := repo.GetSomeUsersParams{
 		Limit:  req.Limit,
 		Offset: (req.Page - 1) * req.Limit,
 	}
-	dbusers, err := server.store.ListCoreUsersWithLimitOffset(ctx, arg)
+	dbusers, err := server.store.GetSomeUsers(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
