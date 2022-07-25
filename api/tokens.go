@@ -44,11 +44,11 @@ func (server *HttpServer) renewAccessToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	if session.IsBlocked {
+	if session.Blocked {
 		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "session blocked"})
 		return
 	}
-	if fmt.Sprintf("%d", session.Uid) != refreshPayload.User {
+	if fmt.Sprintf("%d", session.UserID) != refreshPayload.User {
 		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "incorrect session user"})
 		return
 	}
@@ -56,7 +56,7 @@ func (server *HttpServer) renewAccessToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "mismatch session token"})
 		return
 	}
-	if time.Now().After(session.ExpiresAt) {
+	if time.Now().After(session.Expires) {
 		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "session expired"})
 		return
 	}

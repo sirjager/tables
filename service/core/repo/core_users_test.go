@@ -22,12 +22,12 @@ func createRandomUser(t *testing.T) CoreUser {
 	require.Equal(t, arg.Email, user.Email)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Password, user.Password)
-	require.NotZero(t, user.Uid)
-	require.False(t, user.IsPublic)
-	require.False(t, user.IsBlocked)
-	require.False(t, user.IsVerified)
-	require.NotZero(t, user.CreatedAt)
-	require.NotZero(t, user.UpdatedAt)
+	require.NotZero(t, user.ID)
+	require.False(t, user.Public)
+	require.False(t, user.Blocked)
+	require.False(t, user.Verified)
+	require.NotZero(t, user.Created)
+	require.NotZero(t, user.Updated)
 	return user
 }
 
@@ -44,12 +44,12 @@ func TestGetCoreUserWithEmail(t *testing.T) {
 	require.Equal(t, user.Email, userInDb.Email)
 	require.Equal(t, user.Username, userInDb.Username)
 	require.Equal(t, user.Password, userInDb.Password)
-	require.Equal(t, user.Uid, userInDb.Uid)
-	require.Equal(t, user.IsPublic, userInDb.IsPublic)
-	require.Equal(t, user.IsBlocked, userInDb.IsBlocked)
-	require.Equal(t, user.IsVerified, userInDb.IsVerified)
-	require.Equal(t, user.CreatedAt, userInDb.CreatedAt)
-	require.Equal(t, user.UpdatedAt, userInDb.UpdatedAt)
+	require.Equal(t, user.ID, userInDb.ID)
+	require.Equal(t, user.Public, userInDb.Public)
+	require.Equal(t, user.Blocked, userInDb.Blocked)
+	require.Equal(t, user.Verified, userInDb.Verified)
+	require.Equal(t, user.Created, userInDb.Created)
+	require.Equal(t, user.Updated, userInDb.Updated)
 
 	userNotInDb, err := testQueries.GetCoreUserWithEmail(context.Background(), utils.RandomEmail())
 	require.Error(t, err)
@@ -60,18 +60,18 @@ func TestGetCoreUserWithEmail(t *testing.T) {
 func TestGetCoreUserWithUid(t *testing.T) {
 	user := createRandomUser(t)
 
-	userInDb, err := testQueries.GetCoreUserWithUid(context.Background(), user.Uid)
+	userInDb, err := testQueries.GetCoreUserWithUid(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, userInDb)
 	require.Equal(t, user.Email, userInDb.Email)
 	require.Equal(t, user.Username, userInDb.Username)
 	require.Equal(t, user.Password, userInDb.Password)
-	require.Equal(t, user.Uid, userInDb.Uid)
-	require.Equal(t, user.IsPublic, userInDb.IsPublic)
-	require.Equal(t, user.IsBlocked, userInDb.IsBlocked)
-	require.Equal(t, user.IsVerified, userInDb.IsVerified)
-	require.Equal(t, user.CreatedAt, userInDb.CreatedAt)
-	require.Equal(t, user.UpdatedAt, userInDb.UpdatedAt)
+	require.Equal(t, user.ID, userInDb.ID)
+	require.Equal(t, user.Public, userInDb.Public)
+	require.Equal(t, user.Blocked, userInDb.Blocked)
+	require.Equal(t, user.Verified, userInDb.Verified)
+	require.Equal(t, user.Created, userInDb.Created)
+	require.Equal(t, user.Updated, userInDb.Updated)
 
 	userNotInDb, err := testQueries.GetCoreUserWithUid(context.Background(), utils.RandomInt(1, 99999999999))
 	require.Error(t, err)
@@ -89,12 +89,12 @@ func TestGetCoreUserWithUsername(t *testing.T) {
 	require.Equal(t, user.Username, userInDb.Username)
 	require.Equal(t, user.Password, userInDb.Password)
 	require.Equal(t, user.Fullname, userInDb.Fullname)
-	require.Equal(t, user.Uid, userInDb.Uid)
-	require.Equal(t, user.IsPublic, userInDb.IsPublic)
-	require.Equal(t, user.IsBlocked, userInDb.IsBlocked)
-	require.Equal(t, user.IsVerified, userInDb.IsVerified)
-	require.Equal(t, user.CreatedAt, userInDb.CreatedAt)
-	require.Equal(t, user.UpdatedAt, userInDb.UpdatedAt)
+	require.Equal(t, user.ID, userInDb.ID)
+	require.Equal(t, user.Public, userInDb.Public)
+	require.Equal(t, user.Blocked, userInDb.Blocked)
+	require.Equal(t, user.Verified, userInDb.Verified)
+	require.Equal(t, user.Created, userInDb.Created)
+	require.Equal(t, user.Updated, userInDb.Updated)
 
 	userNotInDb, err := testQueries.GetCoreUserWithUsername(context.Background(), utils.RandomUserName())
 	require.Error(t, err)
@@ -119,23 +119,23 @@ func TestListCoreUsers(t *testing.T) {
 		for _, createdUser := range createUsers {
 			checked := false
 			for _, foundUid := range foundUserUids {
-				if foundUid == createdUser.Uid {
+				if foundUid == createdUser.ID {
 					checked = true
 				}
 			}
 			if !checked {
-				if gotUser.Uid == createdUser.Uid {
-					foundUserUids = append(foundUserUids, gotUser.Uid)
+				if gotUser.ID == createdUser.ID {
+					foundUserUids = append(foundUserUids, gotUser.ID)
 					require.Equal(t, gotUser.Email, createdUser.Email)
 					require.Equal(t, gotUser.Username, createdUser.Username)
 					require.Equal(t, gotUser.Password, createdUser.Password)
-					require.Equal(t, gotUser.Uid, createdUser.Uid)
+					require.Equal(t, gotUser.ID, createdUser.ID)
 					require.Equal(t, gotUser.Fullname, createdUser.Fullname)
-					require.Equal(t, gotUser.IsPublic, createdUser.IsPublic)
-					require.Equal(t, gotUser.IsBlocked, createdUser.IsBlocked)
-					require.Equal(t, gotUser.IsVerified, createdUser.IsVerified)
-					require.Equal(t, gotUser.CreatedAt, createdUser.CreatedAt)
-					require.Equal(t, gotUser.UpdatedAt, createdUser.UpdatedAt)
+					require.Equal(t, gotUser.Public, createdUser.Public)
+					require.Equal(t, gotUser.Blocked, createdUser.Blocked)
+					require.Equal(t, gotUser.Verified, createdUser.Verified)
+					require.Equal(t, gotUser.Created, createdUser.Created)
+					require.Equal(t, gotUser.Updated, createdUser.Updated)
 				}
 			}
 
@@ -161,12 +161,12 @@ func TestListCoreUsersWithLimit(t *testing.T) {
 		require.NotEmpty(t, user.Email)
 		require.NotEmpty(t, user.Username)
 		require.NotEmpty(t, user.Password)
-		require.NotZero(t, user.Uid)
-		require.False(t, user.IsPublic)
-		require.False(t, user.IsBlocked)
-		require.False(t, user.IsVerified)
-		require.NotZero(t, user.CreatedAt)
-		require.NotZero(t, user.UpdatedAt)
+		require.NotZero(t, user.ID)
+		require.False(t, user.Public)
+		require.False(t, user.Blocked)
+		require.False(t, user.Verified)
+		require.NotZero(t, user.Created)
+		require.NotZero(t, user.Updated)
 	}
 }
 
@@ -188,12 +188,12 @@ func TestListCoreUsersWithLimitOffset(t *testing.T) {
 		require.NotEmpty(t, user.Email)
 		require.NotEmpty(t, user.Username)
 		require.NotEmpty(t, user.Password)
-		require.NotZero(t, user.Uid)
-		require.False(t, user.IsPublic)
-		require.False(t, user.IsBlocked)
-		require.False(t, user.IsVerified)
-		require.NotZero(t, user.CreatedAt)
-		require.NotZero(t, user.UpdatedAt)
+		require.NotZero(t, user.ID)
+		require.False(t, user.Public)
+		require.False(t, user.Blocked)
+		require.False(t, user.Verified)
+		require.NotZero(t, user.Created)
+		require.NotZero(t, user.Updated)
 	}
 }
 
@@ -211,9 +211,9 @@ func TestRemoveCoreUserWithEmail(t *testing.T) {
 
 func TestRemoveCoreUserWithUid(t *testing.T) {
 	user := createRandomUser(t)
-	err := testQueries.RemoveCoreUserWithUid(context.Background(), user.Uid)
+	err := testQueries.RemoveCoreUserWithUid(context.Background(), user.ID)
 	require.NoError(t, err)
-	userShouldBeDeleted, err := testQueries.GetCoreUserWithUid(context.Background(), user.Uid)
+	userShouldBeDeleted, err := testQueries.GetCoreUserWithUid(context.Background(), user.ID)
 	require.Error(t, err)
 	require.Empty(t, userShouldBeDeleted)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
@@ -232,80 +232,80 @@ func TestRemoveCoreUserWithUsername(t *testing.T) {
 
 func TestUpdateCoreUserBlocked(t *testing.T) {
 	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserBlocked(context.Background(), UpdateCoreUserBlockedParams{Uid: user.Uid, IsBlocked: true})
+	updatedUser, err := testQueries.UpdateCoreUserBlocked(context.Background(), UpdateCoreUserBlockedParams{ID: user.ID, Blocked: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
-	require.NotEqual(t, user.IsBlocked, updatedUser.IsBlocked)
-	require.False(t, user.IsBlocked)
-	require.True(t, updatedUser.IsBlocked)
+	require.NotEqual(t, user.Blocked, updatedUser.Blocked)
+	require.False(t, user.Blocked)
+	require.True(t, updatedUser.Blocked)
 
 	require.Equal(t, user.Email, updatedUser.Email)
 	require.Equal(t, user.Username, updatedUser.Username)
 	require.Equal(t, user.Password, updatedUser.Password)
-	require.Equal(t, user.Uid, updatedUser.Uid)
-	require.Equal(t, user.IsPublic, updatedUser.IsPublic)
-	require.Equal(t, user.IsVerified, updatedUser.IsVerified)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.ID, updatedUser.ID)
+	require.Equal(t, user.Public, updatedUser.Public)
+	require.Equal(t, user.Verified, updatedUser.Verified)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
 func TestUpdateCoreUserPublic(t *testing.T) {
 	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserPublic(context.Background(), UpdateCoreUserPublicParams{Uid: user.Uid, IsPublic: true})
+	updatedUser, err := testQueries.UpdateCoreUserPublic(context.Background(), UpdateCoreUserPublicParams{ID: user.ID, Public: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
-	require.NotEqual(t, user.IsPublic, updatedUser.IsPublic)
-	require.False(t, user.IsPublic)
-	require.True(t, updatedUser.IsPublic)
+	require.NotEqual(t, user.Public, updatedUser.Public)
+	require.False(t, user.Public)
+	require.True(t, updatedUser.Public)
 
 	require.Equal(t, user.Email, updatedUser.Email)
 	require.Equal(t, user.Username, updatedUser.Username)
 	require.Equal(t, user.Password, updatedUser.Password)
-	require.Equal(t, user.Uid, updatedUser.Uid)
-	require.Equal(t, user.IsBlocked, updatedUser.IsBlocked)
-	require.Equal(t, user.IsVerified, updatedUser.IsVerified)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.ID, updatedUser.ID)
+	require.Equal(t, user.Blocked, updatedUser.Blocked)
+	require.Equal(t, user.Verified, updatedUser.Verified)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
 func TestUpdateCoreUserVerified(t *testing.T) {
 	user := createRandomUser(t)
-	updatedUser, err := testQueries.UpdateCoreUserVerified(context.Background(), UpdateCoreUserVerifiedParams{Uid: user.Uid, IsVerified: true})
+	updatedUser, err := testQueries.UpdateCoreUserVerified(context.Background(), UpdateCoreUserVerifiedParams{ID: user.ID, Verified: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
-	require.NotEqual(t, user.IsVerified, updatedUser.IsVerified)
-	require.False(t, user.IsVerified)
-	require.True(t, updatedUser.IsVerified)
+	require.NotEqual(t, user.Verified, updatedUser.Verified)
+	require.False(t, user.Verified)
+	require.True(t, updatedUser.Verified)
 
 	require.Equal(t, user.Email, updatedUser.Email)
 	require.Equal(t, user.Username, updatedUser.Username)
 	require.Equal(t, user.Password, updatedUser.Password)
-	require.Equal(t, user.Uid, updatedUser.Uid)
-	require.Equal(t, user.IsBlocked, updatedUser.IsBlocked)
-	require.Equal(t, user.IsPublic, updatedUser.IsPublic)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.ID, updatedUser.ID)
+	require.Equal(t, user.Blocked, updatedUser.Blocked)
+	require.Equal(t, user.Public, updatedUser.Public)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
 func TestUpdateCoreUserName(t *testing.T) {
 	user := createRandomUser(t)
 	newName := utils.RandomUserName()
 
-	updatedUser, err := testQueries.UpdateCoreUserName(context.Background(), UpdateCoreUserNameParams{Uid: user.Uid, Fullname: newName})
+	updatedUser, err := testQueries.UpdateCoreUserName(context.Background(), UpdateCoreUserNameParams{ID: user.ID, Fullname: newName})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Fullname, updatedUser.Fullname)
 	require.Equal(t, newName, updatedUser.Fullname)
 
-	require.Equal(t, user.Uid, updatedUser.Uid)
+	require.Equal(t, user.ID, updatedUser.ID)
 	require.Equal(t, user.Email, updatedUser.Email)
 	require.Equal(t, user.Username, updatedUser.Username)
 	require.Equal(t, user.Password, updatedUser.Password)
-	require.Equal(t, user.IsBlocked, updatedUser.IsBlocked)
-	require.Equal(t, user.IsPublic, updatedUser.IsPublic)
-	require.Equal(t, user.IsVerified, updatedUser.IsVerified)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.Blocked, updatedUser.Blocked)
+	require.Equal(t, user.Public, updatedUser.Public)
+	require.Equal(t, user.Verified, updatedUser.Verified)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
 func TestUpdateCoreUserUsername(t *testing.T) {
@@ -313,40 +313,40 @@ func TestUpdateCoreUserUsername(t *testing.T) {
 
 	newUsername := utils.RandomUserName()
 
-	updatedUser, err := testQueries.UpdateCoreUserUsername(context.Background(), UpdateCoreUserUsernameParams{Uid: user.Uid, Username: newUsername})
+	updatedUser, err := testQueries.UpdateCoreUserUsername(context.Background(), UpdateCoreUserUsernameParams{ID: user.ID, Username: newUsername})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Username, updatedUser.Username)
 	require.Equal(t, newUsername, updatedUser.Username)
 
-	require.Equal(t, user.Uid, updatedUser.Uid)
+	require.Equal(t, user.ID, updatedUser.ID)
 	require.Equal(t, user.Fullname, updatedUser.Fullname)
 	require.Equal(t, user.Email, updatedUser.Email)
-	require.Equal(t, user.IsPublic, updatedUser.IsPublic)
-	require.Equal(t, user.IsBlocked, updatedUser.IsBlocked)
+	require.Equal(t, user.Public, updatedUser.Public)
+	require.Equal(t, user.Blocked, updatedUser.Blocked)
 	require.Equal(t, user.Password, updatedUser.Password)
-	require.Equal(t, user.IsVerified, updatedUser.IsVerified)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.Verified, updatedUser.Verified)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }
 
 func TestUpdateCoreUserPassword(t *testing.T) {
 	user := createRandomUser(t)
 	newPassword := utils.RandomPassword()
 
-	updatedUser, err := testQueries.UpdateCoreUserPassword(context.Background(), UpdateCoreUserPasswordParams{Uid: user.Uid, Password: newPassword})
+	updatedUser, err := testQueries.UpdateCoreUserPassword(context.Background(), UpdateCoreUserPasswordParams{ID: user.ID, Password: newPassword})
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedUser)
 	require.NotEqual(t, user.Password, updatedUser.Password)
 	require.Equal(t, newPassword, updatedUser.Password)
 
-	require.Equal(t, user.Uid, updatedUser.Uid)
+	require.Equal(t, user.ID, updatedUser.ID)
 	require.Equal(t, user.Fullname, updatedUser.Fullname)
 	require.Equal(t, user.Email, updatedUser.Email)
-	require.Equal(t, user.IsPublic, updatedUser.IsPublic)
-	require.Equal(t, user.IsBlocked, updatedUser.IsBlocked)
+	require.Equal(t, user.Public, updatedUser.Public)
+	require.Equal(t, user.Blocked, updatedUser.Blocked)
 	require.Equal(t, user.Username, updatedUser.Username)
-	require.Equal(t, user.IsVerified, updatedUser.IsVerified)
-	require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
-	require.Equal(t, user.UpdatedAt, updatedUser.UpdatedAt)
+	require.Equal(t, user.Verified, updatedUser.Verified)
+	require.Equal(t, user.Created, updatedUser.Created)
+	require.Equal(t, user.Updated, updatedUser.Updated)
 }

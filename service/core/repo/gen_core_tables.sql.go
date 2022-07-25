@@ -11,94 +11,94 @@ import (
 
 const addCoreTable = `-- name: AddCoreTable :one
 
-INSERT INTO "public"."core_tables" (tablename,uid,columns) VALUES ($1, $2, $3) RETURNING tid, uid, tablename, columns, created_at, updated_at
+INSERT INTO "public"."core_tables" (name,user_id,columns) VALUES ($1, $2, $3) RETURNING id, user_id, name, columns, created, updated
 `
 
 type AddCoreTableParams struct {
-	Tablename string `json:"tablename"`
-	Uid       int64  `json:"uid"`
-	Columns   string `json:"columns"`
+	Name    string `json:"name"`
+	UserID  int64  `json:"user_id"`
+	Columns string `json:"columns"`
 }
 
 // -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
 func (q *Queries) AddCoreTable(ctx context.Context, arg AddCoreTableParams) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, addCoreTable, arg.Tablename, arg.Uid, arg.Columns)
+	row := q.db.QueryRowContext(ctx, addCoreTable, arg.Name, arg.UserID, arg.Columns)
 	var i CoreTable
 	err := row.Scan(
-		&i.Tid,
-		&i.Uid,
-		&i.Tablename,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
 		&i.Columns,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Created,
+		&i.Updated,
 	)
 	return i, err
 }
 
 const getCoreTableWithName = `-- name: GetCoreTableWithName :one
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE tablename = $1 LIMIT 1
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE name = $1 LIMIT 1
 `
 
-func (q *Queries) GetCoreTableWithName(ctx context.Context, tablename string) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getCoreTableWithName, tablename)
+func (q *Queries) GetCoreTableWithName(ctx context.Context, name string) (CoreTable, error) {
+	row := q.db.QueryRowContext(ctx, getCoreTableWithName, name)
 	var i CoreTable
 	err := row.Scan(
-		&i.Tid,
-		&i.Uid,
-		&i.Tablename,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
 		&i.Columns,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Created,
+		&i.Updated,
 	)
 	return i, err
 }
 
 const getCoreTableWithTid = `-- name: GetCoreTableWithTid :one
 
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE tid = $1 LIMIT 1
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE id = $1 LIMIT 1
 `
 
 // -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-func (q *Queries) GetCoreTableWithTid(ctx context.Context, tid int64) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getCoreTableWithTid, tid)
+func (q *Queries) GetCoreTableWithTid(ctx context.Context, id int64) (CoreTable, error) {
+	row := q.db.QueryRowContext(ctx, getCoreTableWithTid, id)
 	var i CoreTable
 	err := row.Scan(
-		&i.Tid,
-		&i.Uid,
-		&i.Tablename,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
 		&i.Columns,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Created,
+		&i.Updated,
 	)
 	return i, err
 }
 
 const getCoreTableWithTidAndUid = `-- name: GetCoreTableWithTidAndUid :one
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE tid = $1 AND uid = $2 LIMIT 1
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE id = $1 AND user_id = $2 LIMIT 1
 `
 
 type GetCoreTableWithTidAndUidParams struct {
-	Tid int64 `json:"tid"`
-	Uid int64 `json:"uid"`
+	ID     int64 `json:"id"`
+	UserID int64 `json:"user_id"`
 }
 
 func (q *Queries) GetCoreTableWithTidAndUid(ctx context.Context, arg GetCoreTableWithTidAndUidParams) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getCoreTableWithTidAndUid, arg.Tid, arg.Uid)
+	row := q.db.QueryRowContext(ctx, getCoreTableWithTidAndUid, arg.ID, arg.UserID)
 	var i CoreTable
 	err := row.Scan(
-		&i.Tid,
-		&i.Uid,
-		&i.Tablename,
+		&i.ID,
+		&i.UserID,
+		&i.Name,
 		&i.Columns,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Created,
+		&i.Updated,
 	)
 	return i, err
 }
 
 const listCoreTables = `-- name: ListCoreTables :many
 
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables"
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables"
 `
 
 // ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
@@ -112,12 +112,12 @@ func (q *Queries) ListCoreTables(ctx context.Context) ([]CoreTable, error) {
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -133,7 +133,7 @@ func (q *Queries) ListCoreTables(ctx context.Context) ([]CoreTable, error) {
 }
 
 const listCoreTablesWithLimit = `-- name: ListCoreTablesWithLimit :many
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" LIMIT $1::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" LIMIT $1::int
 `
 
 func (q *Queries) ListCoreTablesWithLimit(ctx context.Context, limit int32) ([]CoreTable, error) {
@@ -146,12 +146,12 @@ func (q *Queries) ListCoreTablesWithLimit(ctx context.Context, limit int32) ([]C
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -167,7 +167,7 @@ func (q *Queries) ListCoreTablesWithLimit(ctx context.Context, limit int32) ([]C
 }
 
 const listCoreTablesWithLimitOffset = `-- name: ListCoreTablesWithLimitOffset :many
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" LIMIT $2::int OFFSET $1::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" LIMIT $2::int OFFSET $1::int
 `
 
 type ListCoreTablesWithLimitOffsetParams struct {
@@ -185,12 +185,12 @@ func (q *Queries) ListCoreTablesWithLimitOffset(ctx context.Context, arg ListCor
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -207,12 +207,12 @@ func (q *Queries) ListCoreTablesWithLimitOffset(ctx context.Context, arg ListCor
 
 const listCoreTablesWithUid = `-- name: ListCoreTablesWithUid :many
 
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE uid = $1
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE user_id = $1
 `
 
-// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.UID <== [CORE_TABLES] ---------------------
-func (q *Queries) ListCoreTablesWithUid(ctx context.Context, uid int64) ([]CoreTable, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUid, uid)
+// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
+func (q *Queries) ListCoreTablesWithUid(ctx context.Context, userID int64) ([]CoreTable, error) {
+	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUid, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,12 +221,12 @@ func (q *Queries) ListCoreTablesWithUid(ctx context.Context, uid int64) ([]CoreT
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -242,16 +242,16 @@ func (q *Queries) ListCoreTablesWithUid(ctx context.Context, uid int64) ([]CoreT
 }
 
 const listCoreTablesWithUidWithLimit = `-- name: ListCoreTablesWithUidWithLimit :many
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE uid = $1 LIMIT $2::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE user_id = $1 LIMIT $2::int
 `
 
 type ListCoreTablesWithUidWithLimitParams struct {
-	Uid   int64 `json:"uid"`
-	Limit int32 `json:"limit_"`
+	UserID int64 `json:"user_id"`
+	Limit  int32 `json:"limit_"`
 }
 
 func (q *Queries) ListCoreTablesWithUidWithLimit(ctx context.Context, arg ListCoreTablesWithUidWithLimitParams) ([]CoreTable, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUidWithLimit, arg.Uid, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUidWithLimit, arg.UserID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -260,12 +260,12 @@ func (q *Queries) ListCoreTablesWithUidWithLimit(ctx context.Context, arg ListCo
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -281,17 +281,17 @@ func (q *Queries) ListCoreTablesWithUidWithLimit(ctx context.Context, arg ListCo
 }
 
 const listCoreTablesWithUidWithLimitOffset = `-- name: ListCoreTablesWithUidWithLimitOffset :many
-SELECT tid, uid, tablename, columns, created_at, updated_at FROM "public"."core_tables" WHERE uid = $1 LIMIT $3::int OFFSET $2::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE user_id = $1 LIMIT $3::int OFFSET $2::int
 `
 
 type ListCoreTablesWithUidWithLimitOffsetParams struct {
-	Uid    int64 `json:"uid"`
+	UserID int64 `json:"user_id"`
 	Offset int32 `json:"offset_"`
 	Limit  int32 `json:"limit_"`
 }
 
 func (q *Queries) ListCoreTablesWithUidWithLimitOffset(ctx context.Context, arg ListCoreTablesWithUidWithLimitOffsetParams) ([]CoreTable, error) {
-	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUidWithLimitOffset, arg.Uid, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listCoreTablesWithUidWithLimitOffset, arg.UserID, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -300,12 +300,12 @@ func (q *Queries) ListCoreTablesWithUidWithLimitOffset(ctx context.Context, arg 
 	for rows.Next() {
 		var i CoreTable
 		if err := rows.Scan(
-			&i.Tid,
-			&i.Uid,
-			&i.Tablename,
+			&i.ID,
+			&i.UserID,
+			&i.Name,
 			&i.Columns,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -321,31 +321,31 @@ func (q *Queries) ListCoreTablesWithUidWithLimitOffset(ctx context.Context, arg 
 }
 
 const removeCoreTableWithUidAndName = `-- name: RemoveCoreTableWithUidAndName :exec
-DELETE FROM "public"."core_tables" WHERE uid = $1 AND tablename = $2
+DELETE FROM "public"."core_tables" WHERE user_id = $1 AND name = $2
 `
 
 type RemoveCoreTableWithUidAndNameParams struct {
-	Uid       int64  `json:"uid"`
-	Tablename string `json:"tablename"`
+	UserID int64  `json:"user_id"`
+	Name   string `json:"name"`
 }
 
 func (q *Queries) RemoveCoreTableWithUidAndName(ctx context.Context, arg RemoveCoreTableWithUidAndNameParams) error {
-	_, err := q.db.ExecContext(ctx, removeCoreTableWithUidAndName, arg.Uid, arg.Tablename)
+	_, err := q.db.ExecContext(ctx, removeCoreTableWithUidAndName, arg.UserID, arg.Name)
 	return err
 }
 
 const removeCoreTableWithUidAndTid = `-- name: RemoveCoreTableWithUidAndTid :exec
 
-DELETE FROM "public"."core_tables" WHERE uid = $1 AND tid = $2
+DELETE FROM "public"."core_tables" WHERE user_id = $1 AND id = $2
 `
 
 type RemoveCoreTableWithUidAndTidParams struct {
-	Uid int64 `json:"uid"`
-	Tid int64 `json:"tid"`
+	UserID int64 `json:"user_id"`
+	ID     int64 `json:"id"`
 }
 
 // -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
 func (q *Queries) RemoveCoreTableWithUidAndTid(ctx context.Context, arg RemoveCoreTableWithUidAndTidParams) error {
-	_, err := q.db.ExecContext(ctx, removeCoreTableWithUidAndTid, arg.Uid, arg.Tid)
+	_, err := q.db.ExecContext(ctx, removeCoreTableWithUidAndTid, arg.UserID, arg.ID)
 	return err
 }

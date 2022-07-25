@@ -24,12 +24,12 @@ type Column struct {
 }
 
 type RealTable struct {
-	Tid       int64     `json:"tid"`
-	Tablename string    `json:"name"`
-	Uid       int64     `json:"uid"`
-	Columns   []Column  `json:"columns"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id      int64     `json:"id"`
+	Name    string    `json:"name"`
+	UserId  int64     `json:"user_id"`
+	Columns []Column  `json:"columns"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 type QuerierTx interface {
@@ -132,12 +132,12 @@ func FormatTableEntryToTable(coreTable CoreTable) (RealTable, error) {
 		return table, err
 	}
 	return RealTable{
-		Tid:       coreTable.Tid,
-		Uid:       coreTable.Uid,
-		Tablename: coreTable.Tablename,
-		Columns:   columns,
-		CreatedAt: coreTable.CreatedAt,
-		UpdatedAt: coreTable.UpdatedAt,
+		Id:      coreTable.ID,
+		UserId:  coreTable.UserID,
+		Name:    coreTable.Name,
+		Columns: columns,
+		Created: coreTable.Created,
+		Updated: coreTable.Updated,
 	}, err
 }
 
@@ -180,7 +180,7 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 		_, err = q.db.ExecContext(ctx, create_string)
 		if err != nil {
 			// If any error occured while creating real table then we will delete table entry
-			q.RemoveCoreTableWithUidAndName(ctx, RemoveCoreTableWithUidAndNameParams{Uid: arg.Uid, Tablename: arg.TableName})
+			q.RemoveCoreTableWithUidAndName(ctx, RemoveCoreTableWithUidAndNameParams{UserID: arg.Uid, Name: arg.TableName})
 			if pqErr, ok := err.(*pq.Error); ok {
 				switch pqErr.Code.Name() {
 				case "duplicate_table":
@@ -191,7 +191,7 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 		}
 
 		// Store created table details: name, user.uid , columns json as string
-		created_table, err := q.AddCoreTable(ctx, AddCoreTableParams{Tablename: arg.TableName, Uid: arg.Uid, Columns: string(column_bytes)})
+		created_table, err := q.AddCoreTable(ctx, AddCoreTableParams{Name: arg.TableName, UserID: arg.Uid, Columns: string(column_bytes)})
 		// if any error occurs return err
 		// 1. Error will occur if table with same name aleady exists, uniqye key violation on tablename
 		// 2. any other database error
@@ -212,9 +212,9 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 
 func (store *SQLStore) DropTableTx(ctx context.Context, arg RemoveCoreTableWithUidAndNameParams) error {
 	err := store.execTx(ctx, func(q *Queries) error {
-		drop_table_string := fmt.Sprintf("DROP TABLE IF EXISTS %s;", arg.Tablename)
+		drop_table_string := fmt.Sprintf("DROP TABLE IF EXISTS %s;", arg.Name)
 		// First we will delete entry
-		err := q.RemoveCoreTableWithUidAndName(ctx, RemoveCoreTableWithUidAndNameParams{Uid: arg.Uid, Tablename: arg.Tablename})
+		err := q.RemoveCoreTableWithUidAndName(ctx, RemoveCoreTableWithUidAndNameParams{UserID: arg.UserID, Name: arg.Name})
 		if err != nil {
 			return err
 		}

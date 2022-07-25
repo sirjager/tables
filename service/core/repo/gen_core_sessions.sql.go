@@ -15,63 +15,63 @@ import (
 const addSession = `-- name: AddSession :one
 
 INSERT INTO "public"."core_sessions" 
-(sid,uid,client_ip,user_agent,refresh_token,is_blocked,expires_at) 
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING sid, uid, client_ip, user_agent, refresh_token, is_blocked, expires_at, created_at
+(id,user_id,client_ip,user_agent,refresh_token,blocked,expires) 
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created
 `
 
 type AddSessionParams struct {
-	Sid          uuid.UUID `json:"sid"`
-	Uid          int64     `json:"uid"`
+	ID           uuid.UUID `json:"id"`
+	UserID       int64     `json:"user_id"`
 	ClientIp     string    `json:"client_ip"`
 	UserAgent    string    `json:"user_agent"`
 	RefreshToken string    `json:"refresh_token"`
-	IsBlocked    bool      `json:"is_blocked"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	Blocked      bool      `json:"blocked"`
+	Expires      time.Time `json:"expires"`
 }
 
 // -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
 func (q *Queries) AddSession(ctx context.Context, arg AddSessionParams) (CoreSession, error) {
 	row := q.db.QueryRowContext(ctx, addSession,
-		arg.Sid,
-		arg.Uid,
+		arg.ID,
+		arg.UserID,
 		arg.ClientIp,
 		arg.UserAgent,
 		arg.RefreshToken,
-		arg.IsBlocked,
-		arg.ExpiresAt,
+		arg.Blocked,
+		arg.Expires,
 	)
 	var i CoreSession
 	err := row.Scan(
-		&i.Sid,
-		&i.Uid,
+		&i.ID,
+		&i.UserID,
 		&i.ClientIp,
 		&i.UserAgent,
 		&i.RefreshToken,
-		&i.IsBlocked,
-		&i.ExpiresAt,
-		&i.CreatedAt,
+		&i.Blocked,
+		&i.Expires,
+		&i.Created,
 	)
 	return i, err
 }
 
 const getSession = `-- name: GetSession :one
 
-SELECT sid, uid, client_ip, user_agent, refresh_token, is_blocked, expires_at, created_at FROM "public"."core_sessions" WHERE sid = $1 LIMIT 1
+SELECT id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created FROM "public"."core_sessions" WHERE id = $1 LIMIT 1
 `
 
 // -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
-func (q *Queries) GetSession(ctx context.Context, sid uuid.UUID) (CoreSession, error) {
-	row := q.db.QueryRowContext(ctx, getSession, sid)
+func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (CoreSession, error) {
+	row := q.db.QueryRowContext(ctx, getSession, id)
 	var i CoreSession
 	err := row.Scan(
-		&i.Sid,
-		&i.Uid,
+		&i.ID,
+		&i.UserID,
 		&i.ClientIp,
 		&i.UserAgent,
 		&i.RefreshToken,
-		&i.IsBlocked,
-		&i.ExpiresAt,
-		&i.CreatedAt,
+		&i.Blocked,
+		&i.Expires,
+		&i.Created,
 	)
 	return i, err
 }

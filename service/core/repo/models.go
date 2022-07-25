@@ -12,9 +12,9 @@ import (
 
 type CoreSession struct {
 	// auto generated session id
-	Sid uuid.UUID `json:"sid"`
-	// required,numeric,shouldref=core_users.uid
-	Uid int64 `json:"uid"`
+	ID uuid.UUID `json:"id"`
+	// required,numeric,shouldref=core_users.id
+	UserID int64 `json:"user_id"`
 	// required,ipaddress
 	ClientIp string `json:"client_ip"`
 	// required,user_agent
@@ -22,27 +22,29 @@ type CoreSession struct {
 	// required,token,desc=refresh token
 	RefreshToken string `json:"refresh_token"`
 	// required,boolean,desc=refresh token blocked or not
-	IsBlocked bool `json:"is_blocked"`
+	Blocked bool `json:"blocked"`
 	// timstamp when the refresh token gets expired
-	ExpiresAt time.Time `json:"expires_at"`
+	Expires time.Time `json:"expires"`
 	// timestamp when the refresh token was created
-	CreatedAt time.Time `json:"created_at"`
+	Created time.Time `json:"created"`
 }
 
 type CoreTable struct {
-	Tid int64 `json:"tid"`
-	// required,numeric,shouldref=core_users.uid
-	Uid       int64  `json:"uid"`
-	Tablename string `json:"tablename"`
+	// numeric,server-side auto generated id
+	ID int64 `json:"id"`
+	// required,numeric,shouldref=core_users.id
+	UserID int64 `json:"user_id"`
+	// required,alphanumeric,unique,min=3
+	Name string `json:"name"`
 	// required,jsonstring,desc=columns of the tables
-	Columns   string    `json:"columns"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Columns string    `json:"columns"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 type CoreUser struct {
 	// server-side auto generated id
-	Uid int64 `json:"uid"`
+	ID int64 `json:"id"`
 	// required,max=255
 	Email string `json:"email"`
 	// required,alphanumeric,min=3,max=60
@@ -52,13 +54,13 @@ type CoreUser struct {
 	// optional,max=255
 	Fullname string `json:"fullname"`
 	// optinal,default=false,desc=profile visible by others or not
-	IsPublic bool `json:"is_public"`
+	Public bool `json:"public"`
 	// optinal,default=false,desc=email is verified or not
-	IsVerified bool `json:"is_verified"`
+	Verified bool `json:"verified"`
 	// optinal,default=false,desc=profile is accessible or not
-	IsBlocked bool `json:"is_blocked"`
+	Blocked bool `json:"blocked"`
 	// server-side auto generated timestamp with time zone
-	UpdatedAt time.Time `json:"updated_at"`
+	Updated time.Time `json:"updated"`
 	// server-side auto generated timestamp with time zone
-	CreatedAt time.Time `json:"created_at"`
+	Created time.Time `json:"created"`
 }

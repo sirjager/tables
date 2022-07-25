@@ -17,22 +17,22 @@ type Querier interface {
 	AddCoreUser(ctx context.Context, arg AddCoreUserParams) (CoreUser, error)
 	// -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
 	AddSession(ctx context.Context, arg AddSessionParams) (CoreSession, error)
-	GetCoreTableWithName(ctx context.Context, tablename string) (CoreTable, error)
+	GetCoreTableWithName(ctx context.Context, name string) (CoreTable, error)
 	// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-	GetCoreTableWithTid(ctx context.Context, tid int64) (CoreTable, error)
+	GetCoreTableWithTid(ctx context.Context, id int64) (CoreTable, error)
 	GetCoreTableWithTidAndUid(ctx context.Context, arg GetCoreTableWithTidAndUidParams) (CoreTable, error)
 	GetCoreUserWithEmail(ctx context.Context, email string) (CoreUser, error)
 	// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
-	GetCoreUserWithUid(ctx context.Context, uid int64) (CoreUser, error)
+	GetCoreUserWithUid(ctx context.Context, id int64) (CoreUser, error)
 	GetCoreUserWithUsername(ctx context.Context, username string) (CoreUser, error)
 	// -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
-	GetSession(ctx context.Context, sid uuid.UUID) (CoreSession, error)
+	GetSession(ctx context.Context, id uuid.UUID) (CoreSession, error)
 	// ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
 	ListCoreTables(ctx context.Context) ([]CoreTable, error)
 	ListCoreTablesWithLimit(ctx context.Context, limit int32) ([]CoreTable, error)
 	ListCoreTablesWithLimitOffset(ctx context.Context, arg ListCoreTablesWithLimitOffsetParams) ([]CoreTable, error)
-	// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.UID <== [CORE_TABLES] ---------------------
-	ListCoreTablesWithUid(ctx context.Context, uid int64) ([]CoreTable, error)
+	// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
+	ListCoreTablesWithUid(ctx context.Context, userID int64) ([]CoreTable, error)
 	ListCoreTablesWithUidWithLimit(ctx context.Context, arg ListCoreTablesWithUidWithLimitParams) ([]CoreTable, error)
 	ListCoreTablesWithUidWithLimitOffset(ctx context.Context, arg ListCoreTablesWithUidWithLimitOffsetParams) ([]CoreTable, error)
 	// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
@@ -44,7 +44,7 @@ type Querier interface {
 	RemoveCoreTableWithUidAndTid(ctx context.Context, arg RemoveCoreTableWithUidAndTidParams) error
 	RemoveCoreUserWithEmail(ctx context.Context, email string) error
 	// ------------------------------ REMOVE ONE CORE_USERS -> nil  ------------------------------
-	RemoveCoreUserWithUid(ctx context.Context, uid int64) error
+	RemoveCoreUserWithUid(ctx context.Context, id int64) error
 	RemoveCoreUserWithUsername(ctx context.Context, username string) error
 	UpdateCoreUserBlocked(ctx context.Context, arg UpdateCoreUserBlockedParams) (CoreUser, error)
 	// ------------------------------ UPDATE ONE CORE_USERS <-> CORE_USERS  ------------------------------

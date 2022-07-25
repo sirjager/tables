@@ -17,29 +17,29 @@ import (
 )
 
 type userAsResponse struct {
-	Uid        int64  `json:"uid"`
-	Email      string `json:"email"`
-	Username   string `json:"username"`
-	Fullname   string `json:"fullname"`
-	IsPublic   bool   `json:"is_public"`
-	IsBlocked  bool   `json:"is_blocked"`
-	IsVerified bool   `json:"is_verified"`
-	UpdatedAt  string `json:"updated_at"`
-	CreatedAt  string `json:"created_at"`
+	ID       int64  `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Fullname string `json:"fullname"`
+	Public   bool   `json:"public"`
+	Blocked  bool   `json:"blocked"`
+	Verified bool   `json:"verified"`
+	Updated  string `json:"updated"`
+	Created  string `json:"created"`
 }
 
 // ------------------------------------------------------------------------------------------------------------
 func removePassword(user repo.CoreUser) userAsResponse {
 	return userAsResponse{
-		Uid:        user.Uid,
-		Email:      user.Email,
-		Username:   user.Username,
-		Fullname:   user.Fullname,
-		IsPublic:   user.IsPublic,
-		IsVerified: user.IsVerified,
-		IsBlocked:  user.IsBlocked,
-		CreatedAt:  user.CreatedAt.String(),
-		UpdatedAt:  user.UpdatedAt.String(),
+		ID:       user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Fullname: user.Fullname,
+		Public:   user.Public,
+		Verified: user.Verified,
+		Blocked:  user.Blocked,
+		Created:  user.Created.String(),
+		Updated:  user.Updated.String(),
 	}
 }
 
@@ -171,25 +171,25 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	}
 
 	// create access token
-	access_token, accessPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.Uid), server.config.AccessTokenDuration)
+	access_token, accessPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.ID), server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	refresh_token, refreshPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.Uid), server.config.RefreshTokenDuration)
+	refresh_token, refreshPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.ID), server.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 	session, err := server.store.AddSession(ctx, repo.AddSessionParams{
-		ExpiresAt:    refreshPayload.ExpiredAt,
+		Expires:      refreshPayload.ExpiredAt,
 		UserAgent:    ctx.Request.UserAgent(),
-		Sid:          refreshPayload.Id,
+		ID:           refreshPayload.Id,
 		ClientIp:     ctx.ClientIP(),
 		RefreshToken: refresh_token,
-		Uid:          dbuser.Uid,
-		IsBlocked:    false,
+		UserID:       dbuser.ID,
+		Blocked:      false,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
@@ -197,7 +197,7 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	}
 
 	loginResponse := loginUserResponse{
-		SessionId:             session.Sid,
+		SessionId:             session.ID,
 		AccessToken:           access_token,
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
 		RefreshToken:          refresh_token,

@@ -93,7 +93,7 @@ func (server *HttpServer) deleteTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err := server.store.DropTableTx(ctx, repo.RemoveCoreTableWithUidAndNameParams{Uid: req.User, Tablename: req.Table})
+	err := server.store.DropTableTx(ctx, repo.RemoveCoreTableWithUidAndNameParams{UserID: req.User, Name: req.Table})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
