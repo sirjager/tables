@@ -1,69 +1,60 @@
 package tokens
 
-import (
-	"testing"
-	"time"
+// func TestJwtBuilder(t *testing.T) {
+// 	builder, err := NewJwtBuilder(utils.RandomString(33))
+// 	require.NoError(t, err)
 
-	"github.com/SirJager/tables/service/core/utils"
-	"github.com/golang-jwt/jwt"
-	"github.com/stretchr/testify/require"
-)
+// 	user := utils.RandomUserName()
+// 	duration := time.Minute
 
-func TestJwtBuilder(t *testing.T) {
-	builder, err := NewJwtBuilder(utils.RandomString(33))
-	require.NoError(t, err)
+// 	issued_at := time.Now()
+// 	expired_at := issued_at.Add(duration)
 
-	user := utils.RandomUserName()
-	duration := time.Minute
+// 	token, payload, err := builder.CreateToken(user, duration)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, token)
+// 	require.NotEmpty(t, payload)
 
-	issued_at := time.Now()
-	expired_at := issued_at.Add(duration)
+// 	payload, err = builder.VerifyToken(token)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, token)
 
-	token, payload, err := builder.CreateToken(user, duration)
-	require.NoError(t, err)
-	require.NotEmpty(t, token)
-	require.NotEmpty(t, payload)
+// 	require.NotZero(t, payload.Id)
+// 	require.Equal(t, user, payload.User)
+// 	require.WithinDuration(t, issued_at, payload.IssuedAt, time.Second)
+// 	require.WithinDuration(t, expired_at, payload.ExpiredAt, time.Second)
 
-	payload, err = builder.VerifyToken(token)
-	require.NoError(t, err)
-	require.NotEmpty(t, token)
+// }
 
-	require.NotZero(t, payload.Id)
-	require.Equal(t, user, payload.User)
-	require.WithinDuration(t, issued_at, payload.IssuedAt, time.Second)
-	require.WithinDuration(t, expired_at, payload.ExpiredAt, time.Second)
+// func TestExpiredJwtToken(t *testing.T) {
+// 	builder, err := NewJwtBuilder(utils.RandomString(32))
+// 	require.NoError(t, err)
 
-}
+// 	token, payload, err := builder.CreateToken(utils.RandomUserName(), -time.Minute)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, token)
+// 	require.NotEmpty(t, payload)
 
-func TestExpiredJwtToken(t *testing.T) {
-	builder, err := NewJwtBuilder(utils.RandomString(32))
-	require.NoError(t, err)
+// 	payload, err = builder.VerifyToken(token)
+// 	require.Error(t, err)
+// 	require.EqualError(t, err, ErrExpiredToken.Error())
+// 	require.Nil(t, payload)
 
-	token, payload, err := builder.CreateToken(utils.RandomUserName(), -time.Minute)
-	require.NoError(t, err)
-	require.NotEmpty(t, token)
-	require.NotEmpty(t, payload)
+// }
 
-	payload, err = builder.VerifyToken(token)
-	require.Error(t, err)
-	require.EqualError(t, err, ErrExpiredToken.Error())
-	require.Nil(t, payload)
+// func TestInvalidJwtTokenAlgNone(t *testing.T) {
+// 	payload, err := NewPayload(utils.RandomUserName(), time.Minute)
+// 	require.NoError(t, err)
 
-}
+// 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, payload)
+// 	token, err := jwtToken.SignedString(jwt.UnsafeAllowNoneSignatureType)
+// 	require.NoError(t, err)
 
-func TestInvalidJwtTokenAlgNone(t *testing.T) {
-	payload, err := NewPayload(utils.RandomUserName(), time.Minute)
-	require.NoError(t, err)
+// 	builder, err := NewJwtBuilder(utils.RandomString(32))
+// 	require.NoError(t, err)
 
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, payload)
-	token, err := jwtToken.SignedString(jwt.UnsafeAllowNoneSignatureType)
-	require.NoError(t, err)
-
-	builder, err := NewJwtBuilder(utils.RandomString(32))
-	require.NoError(t, err)
-
-	payload, err = builder.VerifyToken(token)
-	require.Error(t, err)
-	require.EqualError(t, err, ErrInvalidToken.Error())
-	require.Nil(t, payload)
-}
+// 	payload, err = builder.VerifyToken(token)
+// 	require.Error(t, err)
+// 	require.EqualError(t, err, ErrInvalidToken.Error())
+// 	require.Nil(t, payload)
+// }
