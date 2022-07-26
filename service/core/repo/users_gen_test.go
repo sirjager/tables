@@ -1,34 +1,26 @@
 package core_repo
 
-import (
-	"context"
-	"testing"
+// func createRandomUser(t *testing.T) CoreUser {
+// 	arg := CreateUserParams{
+// 		Email:    utils.RandomEmail(),
+// 		Username: utils.RandomUserName(),
+// 		Password: utils.RandomPassword(),
+// 	}
+// 	user, err := testQueries.CreateUser(context.Background(), arg)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, user)
 
-	"github.com/SirJager/tables/service/core/utils"
-	"github.com/stretchr/testify/require"
-)
-
-func createRandomUser(t *testing.T) CoreUser {
-	arg := CreateUserParams{
-		Email:    utils.RandomEmail(),
-		Username: utils.RandomUserName(),
-		Password: utils.RandomPassword(),
-	}
-	user, err := testQueries.CreateUser(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, user)
-
-	require.Equal(t, arg.Email, user.Email)
-	require.Equal(t, arg.Username, user.Username)
-	require.Equal(t, arg.Password, user.Password)
-	require.NotZero(t, user.ID)
-	require.False(t, user.Public)
-	require.False(t, user.Blocked)
-	require.False(t, user.Verified)
-	require.NotZero(t, user.Created)
-	require.NotZero(t, user.Updated)
-	return user
-}
+// 	require.Equal(t, arg.Email, user.Email)
+// 	require.Equal(t, arg.Username, user.Username)
+// 	require.Equal(t, arg.Password, user.Password)
+// 	require.NotZero(t, user.ID)
+// 	require.False(t, user.Public)
+// 	require.False(t, user.Blocked)
+// 	require.False(t, user.Verified)
+// 	require.NotZero(t, user.Created)
+// 	require.NotZero(t, user.Updated)
+// 	return user
+// }
 
 // func TestAddCoreUser(t *testing.T) {
 // 	createRandomUser(t)

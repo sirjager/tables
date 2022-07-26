@@ -32,13 +32,6 @@ type RealTable struct {
 	Updated time.Time `json:"updated"`
 }
 
-type QuerierTx interface {
-	CreateTableTx(ctx context.Context, arg CreateTableTxParams) (RealTable, error)
-	DropTableTx(ctx context.Context, arg DeleteTableWhereUserAndNameParams) error
-	GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
-	InsertRows(ctx context.Context, arg InsertRowsParams) error
-}
-
 func getColumnString(col Column) (string, error) {
 	var err error
 	var validate = validator.New()
@@ -381,4 +374,47 @@ func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 		results = append(results, fields)
 	}
 	return results, err
+}
+
+type AddColumnsTxParams struct {
+	Name    string   `json:"table" binding:"required,gte=3,lte=60"`
+	Columns []Column `json:"columns" binding:"required"`
+}
+
+func (store *SQLStore) AddColumnTx(ctx context.Context, arg AddColumnsTxParams) (RealTable, error) {
+	var result RealTable
+	err := store.execTx(ctx, func(q *Queries) error {
+		var all_columns_string string = ""
+		// Process columns
+		//  1. validate column : types, name
+		// 2. generate column string:  NAME VARCHAR(50) NOT NULL
+		for i, col := range arg.Columns {
+			column_string, err := getColumnString(col)
+			if err != nil {
+				return err
+			}
+			if i == len(arg.Columns)-1 {
+				// If last column then dont add comma (,)
+				// ADD COLUMN fax VARCHAR,
+				all_columns_string = all_columns_string + " ADD COLUMN " + column_string
+			} else {
+				// If not a last column add comma (,)
+				all_columns_string = all_columns_string + " ADD COLUMN " + column_string + ", "
+			}
+		}
+		// Build columns json string
+		columns_data := arg.Columns
+		_, err := json.Marshal(columns_data)
+		if err != nil {
+			return err
+		}
+
+		// All New Columns are validated now we will create Columns and update the record
+		alterTableString := fmt.Sprintf(`ALTER TABLE "public"."%s" %s;`, arg.Name, all_columns_string)
+		_, err = q.db.ExecContext(ctx, alterTableString)
+		
+
+		return err
+	})
+	return result, err
 }
