@@ -280,3 +280,28 @@ func (q *Queries) GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreT
 	}
 	return items, nil
 }
+
+const updateTableColumns = `-- name: UpdateTableColumns :one
+
+UPDATE "public"."core_tables" SET columns = $1 WHERE id = $2 RETURNING id, user_id, name, columns, created, updated
+`
+
+type UpdateTableColumnsParams struct {
+	Columns string `json:"columns"`
+	ID      int64  `json:"id"`
+}
+
+// -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
+func (q *Queries) UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (CoreTable, error) {
+	row := q.db.QueryRowContext(ctx, updateTableColumns, arg.Columns, arg.ID)
+	var i CoreTable
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Columns,
+		&i.Created,
+		&i.Updated,
+	)
+	return i, err
+}

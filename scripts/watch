@@ -1,0 +1,8 @@
+#!/bin/sh
+# Needs inotiy-tools
+
+while true; do 
+  npx kill-port 8080
+  $@ &
+  inotifywait -e modify -e move -e create -e delete -e attrib -r `pwd`
+done

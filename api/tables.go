@@ -150,3 +150,99 @@ func (server *HttpServer) insertRows(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, MessageResponse{Message: fmt.Sprintf("%d rows inserted in %s", len(req.Rows), uri.Table)})
 }
+
+type addColumnsParams struct {
+	Columns []repo.Column `json:"columns" binding:"required"`
+}
+
+type addColumnsUri struct {
+	Table string `uri:"table" binding:"required,gte=3,lte=50"`
+	User  int64  `uri:"user" binding:"required,numeric,min=1"`
+}
+
+func (server *HttpServer) addColumns(ctx *gin.Context) {
+	var req addColumnsParams
+	var uri addColumnsUri
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	updatedTable, err := server.store.AddColumnTx(ctx,
+		repo.AddColumnsTxParams{UserID: uri.User, Table: uri.Table, Columns: req.Columns})
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, updatedTable)
+}
+
+type dropColumnsParams struct {
+	Columns []string `json:"columns" binding:"required"`
+}
+
+type dropColumnsUri struct {
+	Table string `uri:"table" binding:"required,gte=3,lte=50"`
+	User  int64  `uri:"user" binding:"required,numeric,min=1"`
+}
+
+func (server *HttpServer) deleteColumns(ctx *gin.Context) {
+	var req dropColumnsParams
+	var uri dropColumnsUri
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	updatedTable, err := server.store.DropColumnTx(ctx, repo.DropColumnsTxParams{UserID: uri.User, Table: uri.Table, Columns: req.Columns})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, updatedTable)
+}
+
+type deleteRowsUriParams struct {
+	Table  string `uri:"table" validate:"required,alphanum,min=1"`
+	UserID int64  `uri:"user" validate:"required,numeric,min=1"`
+}
+
+// valid body example: { "rows": { "id": [ 1, 2, 3 ], "name": [ "user1" ] } }
+type deleteRowParams struct {
+	Rows map[string][]interface{} `json:"rows" validate:"required,gte=1"`
+}
+
+func (server *HttpServer) deleteRows(ctx *gin.Context) {
+	var req deleteRowParams
+	var uri deleteRowsUriParams
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	err := server.store.DeleteRows(ctx, repo.DeleteRowsParams{Table: uri.Table, UserID: uri.UserID, Rows: req.Rows})
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, MessageResponse{Message: "Done"})
+}

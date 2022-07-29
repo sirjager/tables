@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,6 +40,11 @@ func getColumnString(col Column) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if _, err := strconv.Atoi(string(col.Name[0])); err == nil {
+		return "", fmt.Errorf("invalid column name %s . Column name can not start with a number", col.Name)
+	}
+
 	main_string := col.Name
 	column_type := ""
 	upper_col_type := strings.ToUpper(col.Type)
@@ -116,6 +122,15 @@ func getColumnsFromSchema(coreTable CoreTable) ([]Column, error) {
 
 }
 
+func ColumnsToJsonString(columns []Column) (string, error) {
+	// Build columns json string
+	column_bytes, err := json.Marshal(columns)
+	if err != nil {
+		return "", err
+	}
+	return string(column_bytes), err
+}
+
 func FormatTableEntryToTable(coreTable CoreTable) (RealTable, error) {
 	var err error
 	var columns []Column
@@ -161,8 +176,7 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 			}
 		}
 		// Build columns json string
-		columns_data := arg.Columns
-		column_bytes, err := json.Marshal(columns_data)
+		columnsString, err := ColumnsToJsonString(arg.Columns)
 		if err != nil {
 			return err
 		}
@@ -184,7 +198,7 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 		}
 
 		// Store created table details: name, user.uid , columns json as string
-		created_table, err := q.CreateTable(ctx, CreateTableParams{Name: arg.Name, UserID: arg.UserID, Columns: string(column_bytes)})
+		created_table, err := q.CreateTable(ctx, CreateTableParams{Name: arg.Name, UserID: arg.UserID, Columns: columnsString})
 		// if any error occurs return err
 		// 1. Error will occur if table with same name aleady exists, uniqye key violation on tablename
 		// 2. any other database error
@@ -219,6 +233,186 @@ func (store *SQLStore) DropTableTx(ctx context.Context, arg DeleteTableWhereUser
 		return err
 	})
 	return err
+}
+
+type AddColumnsTxParams struct {
+	Table   string   `json:"table" binding:"required,gte=3,lte=60"`
+	Columns []Column `json:"columns" binding:"required"`
+	UserID  int64    `json:"user_id" binding:"required,numeric,min=1"`
+}
+
+func (store *SQLStore) AddColumnTx(ctx context.Context, arg AddColumnsTxParams) (RealTable, error) {
+	var result RealTable
+	err := store.execTx(ctx, func(q *Queries) error {
+		var all_columns_string string = ""
+		// Process columns
+		//  1. validate column : types, name
+		// 2. generate column string:  NAME VARCHAR(50) NOT NULL
+		for i, col := range arg.Columns {
+			column_string, err := getColumnString(col)
+			if err != nil {
+				return err
+			}
+			if i == len(arg.Columns)-1 {
+				// If last column then dont add comma (,)
+				// ADD COLUMN fax VARCHAR,
+				all_columns_string = all_columns_string + " ADD COLUMN " + column_string
+			} else {
+				// If not a last column add comma (,)
+				all_columns_string = all_columns_string + " ADD COLUMN " + column_string + ", "
+			}
+		}
+
+		coretable, err := q.GetTableWhereName(ctx, arg.Table)
+		if err != nil {
+			return err
+		}
+
+		if coretable.UserID != arg.UserID {
+			// We will return error if the table does not belongs to user
+			return fmt.Errorf("table %s not found", arg.Table)
+		}
+
+		// Now before creating real table we will check if columns exists
+		mytable, err := FormatTableEntryToTable(coretable)
+		if err != nil {
+			return err
+		}
+
+		var alreadyExistingColumns []string = []string{}
+		for _, newCol := range arg.Columns {
+			for _, existCol := range mytable.Columns {
+				if newCol.Name == existCol.Name {
+					alreadyExistingColumns = append(alreadyExistingColumns, newCol.Name)
+				}
+			}
+		}
+
+		if len(alreadyExistingColumns) > 0 {
+			return fmt.Errorf("%s already exists in the table", alreadyExistingColumns)
+		}
+
+		/* At this point we have new valid columns to be added in table which belongs to the user
+		now we will first add columns in real table. then we will update the record
+		*/
+
+		alterTableString := fmt.Sprintf(`ALTER TABLE "public"."%s" %s;`, arg.Table, all_columns_string)
+		_, err = q.db.ExecContext(ctx, alterTableString)
+		if err != nil {
+			return err
+		}
+		// if no errors the we must update the records
+		mytable.Columns = append(mytable.Columns, arg.Columns...)
+		// Build columns json string
+		columnsString, err := ColumnsToJsonString(mytable.Columns)
+		if err != nil {
+			return err
+		}
+		updatedTable, err := q.UpdateTableColumns(ctx, UpdateTableColumnsParams{ID: mytable.ID, Columns: columnsString})
+		if err != nil {
+			return err
+		}
+		result, err = FormatTableEntryToTable(updatedTable)
+		return err
+	})
+	return result, err
+}
+
+type DropColumnsTxParams struct {
+	Table   string   `json:"table" binding:"required,gte=3,lte=60"`
+	UserID  int64    `json:"uid" binding:"required,numeric,min=1"`
+	Columns []string `json:"columns" binding:"required"`
+}
+
+func (store *SQLStore) DropColumnTx(ctx context.Context, arg DropColumnsTxParams) (RealTable, error) {
+	var result RealTable
+	err := store.execTx(ctx, func(q *Queries) error {
+		// First we will get table and check if it belongs to the user
+		coretable, err := q.GetTableWhereName(ctx, arg.Table)
+		if err != nil {
+			return err
+		}
+
+		if coretable.UserID != arg.UserID {
+			// return error if table does not belongs to the user
+			return fmt.Errorf("table %s not found", arg.Table)
+		}
+
+		mytable, err := FormatTableEntryToTable(coretable)
+		if err != nil {
+			return err
+		}
+		// No we will check if the columns exists or not
+		//
+		numberOfColumnsToDelete := 0
+		for _, colToDel := range arg.Columns {
+			var columExists bool
+			for _, existingCol := range mytable.Columns {
+				if colToDel == existingCol.Name {
+					// This means columns does exists
+					numberOfColumnsToDelete += 1
+					columExists = true
+				}
+			}
+			if !columExists {
+				return fmt.Errorf("column %s does not exists", colToDel)
+			}
+		}
+
+		// We will check if user wants to delete all the columns or not
+		// if he/she does wants to delete all the columns then we send error: delete table instead
+		if numberOfColumnsToDelete == len(mytable.Columns) {
+			return fmt.Errorf("table has %d columns and and you are deleting %d columns. which literally means you want all columns gone, delete table instead",
+				len(mytable.Columns), numberOfColumnsToDelete)
+		}
+
+		// at this point we have table which belongs to the user
+		// valid names of columns which user wants to delete from his table
+
+		// Now we build drop column strings
+		var all_columns_string string = ""
+		existingColumns := mytable.Columns
+		for i, delcol := range arg.Columns {
+			isLastColumn := i == len(arg.Columns)-1
+			for j, existingCol := range existingColumns {
+				if delcol == existingCol.Name {
+					// name matches then this is the column we want to delete
+					if isLastColumn {
+						all_columns_string += " DROP COLUMN " + delcol
+					} else {
+						all_columns_string += " DROP COLUMN " + delcol + ","
+					}
+					existingColumns = append(existingColumns[:j], existingColumns[j+1:]...)
+				}
+			}
+		}
+
+		if all_columns_string == "" {
+			return fmt.Errorf("no columns deleted")
+		}
+
+		updatedColumnsString, err := ColumnsToJsonString(existingColumns)
+		if err != nil {
+			return err
+		}
+
+		// No make Drop Column string
+		alterTableString := fmt.Sprintf(`ALTER TABLE "public"."%s" %s;`, arg.Table, all_columns_string)
+
+		// At this point all validations is done we will start making changes
+		_, err = q.db.ExecContext(ctx, alterTableString)
+		if err != nil {
+			println(err.Error())
+			return err
+		}
+		updatedTable, err := q.UpdateTableColumns(ctx, UpdateTableColumnsParams{ID: mytable.ID, Columns: updatedColumnsString})
+		if err != nil {
+			return err
+		}
+		result, err = FormatTableEntryToTable(updatedTable)
+		return err
+	})
+	return result, err
 }
 
 type KeyValueParams struct {
@@ -376,45 +570,76 @@ func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 	return results, err
 }
 
-type AddColumnsTxParams struct {
-	Name    string   `json:"table" binding:"required,gte=3,lte=60"`
-	Columns []Column `json:"columns" binding:"required"`
+type DeleteRowsParams struct {
+	Table  string                   `json:"table" validate:"required,alphanum,min=1"`
+	UserID int64                    `json:"useer" validate:"required,numeric,min=1"`
+	Rows   map[string][]interface{} `json:"rows" validate:"required,gte=1"`
 }
 
-func (store *SQLStore) AddColumnTx(ctx context.Context, arg AddColumnsTxParams) (RealTable, error) {
-	var result RealTable
-	err := store.execTx(ctx, func(q *Queries) error {
-		var all_columns_string string = ""
-		// Process columns
-		//  1. validate column : types, name
-		// 2. generate column string:  NAME VARCHAR(50) NOT NULL
-		for i, col := range arg.Columns {
-			column_string, err := getColumnString(col)
-			if err != nil {
-				return err
-			}
-			if i == len(arg.Columns)-1 {
-				// If last column then dont add comma (,)
-				// ADD COLUMN fax VARCHAR,
-				all_columns_string = all_columns_string + " ADD COLUMN " + column_string
-			} else {
-				// If not a last column add comma (,)
-				all_columns_string = all_columns_string + " ADD COLUMN " + column_string + ", "
-			}
-		}
-		// Build columns json string
-		columns_data := arg.Columns
-		_, err := json.Marshal(columns_data)
-		if err != nil {
-			return err
-		}
-
-		// All New Columns are validated now we will create Columns and update the record
-		alterTableString := fmt.Sprintf(`ALTER TABLE "public"."%s" %s;`, arg.Name, all_columns_string)
-		_, err = q.db.ExecContext(ctx, alterTableString)
-		
-
+func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
+	var err error
+	validate := validator.New()
+	err = validate.Struct(arg)
+	if err != nil {
 		return err
-	})
-	return result, err
+	}
+
+	// Get Table schema
+	table, err := q.GetTableWhereName(ctx, arg.Table)
+	if err != nil {
+		return err
+	}
+
+	mytable, err := FormatTableEntryToTable(table)
+	if err != nil {
+		return err
+	}
+
+	// This will extract all the keys (all column names)
+	columns := make([]string, len(arg.Rows))
+	//DELETE FROM links WHERE id IN (6,5) RETURNING *;
+	i := 0
+	mainExecuteString := ""
+	for col, v := range arg.Rows {
+		// We got the column name now we need to know what data type the column is
+		colType := ""
+		columnExists := false
+		for _, mycol := range mytable.Columns {
+			if col == mycol.Name {
+				colType = mycol.Type
+				columnExists = true
+				break
+			}
+		}
+		// We will also check if column given by user exists or not.
+		// this can save us unawanted invalid interaction with database
+		if !columnExists {
+			return fmt.Errorf("column [%s] does not exits", col)
+		}
+
+		columns[i] = col
+		i++
+		mainString := "DELETE FROM " + arg.Table + " WHERE " + col + " IN ("
+		for valueIndex, value := range v {
+			isLast := valueIndex == len(v)-1
+			if isLast {
+				// We will check if the value is a text then we need single quote
+				if colType == "varchar" || colType == "text" {
+					mainString += fmt.Sprintf("'%v');", value)
+				} else {
+					mainString += fmt.Sprintf("%v);", value)
+				}
+			} else {
+				// We will check if the value is a text then we need single quote
+				if colType == "varchar" || colType == "text" {
+					mainString += fmt.Sprintf("'%v',", value)
+				} else {
+					mainString += fmt.Sprintf("%v,", value)
+				}
+			}
+		}
+		mainExecuteString += " " + mainString
+	}
+	_, err = q.db.ExecContext(ctx, mainExecuteString)
+	return err
 }

@@ -7,5 +7,7 @@ type QuerierTx interface {
 	DropTableTx(ctx context.Context, arg DeleteTableWhereUserAndNameParams) error
 	GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 	InsertRows(ctx context.Context, arg InsertRowsParams) error
+	DeleteRows(ctx context.Context, arg DeleteRowsParams) error
 	AddColumnTx(ctx context.Context, arg AddColumnsTxParams) (RealTable, error)
+	DropColumnTx(ctx context.Context, arg DropColumnsTxParams) (RealTable, error)
 }

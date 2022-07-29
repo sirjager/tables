@@ -99,13 +99,23 @@ import (
 
 func TestAddColumns(t *testing.T) {
 	store := NewStore(testDb)
-
 	_, err := store.AddColumnTx(context.Background(), AddColumnsTxParams{
-		Name: "mmm",
+		Table: "mytable",
 		Columns: []Column{
-			{Name: "col1", Type: "varchar", Length: 50, Primary: true, Unique: true, Required: true},
+			{Name: "col1", Type: "varchar", Length: 50, Unique: true, Required: true},
 			{Name: "col2", Type: "integer", Precision: 10, Scale: 4, Unique: true, Required: true},
 		},
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func TestDropColumns(t *testing.T) {
+	store := NewStore(testDb)
+	_, err := store.DropColumnTx(context.Background(), DropColumnsTxParams{
+		Table:   "mytable",
+		Columns: []string{"col1", "col2"},
 	})
 	if err != nil {
 		fmt.Println(err.Error())

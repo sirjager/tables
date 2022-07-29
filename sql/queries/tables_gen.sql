@@ -44,3 +44,11 @@ DELETE FROM "public"."core_tables" WHERE user_id = $1;
 
 -- name: DeleteTableWhereUserAndName :exec
 DELETE FROM "public"."core_tables" WHERE user_id = $1 AND name = $2;
+
+
+-- -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
+
+-- name: UpdateTableColumns :one
+UPDATE "public"."core_tables" SET columns = $1 WHERE id = $2 RETURNING *;
+
+
