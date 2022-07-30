@@ -111,25 +111,6 @@ type insertRowsRequestUri struct {
 	User  int32  `uri:"user" binding:"required,numeric,min=1"`
 }
 
-type getRowsParams struct {
-	User  int32  `uri:"user" binding:"required,numeric,min=1"`
-	Table string `uri:"table" binding:"required,gte=3,lte=50"`
-}
-
-func (server *HttpServer) getRows(ctx *gin.Context) {
-	var req getRowsParams
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-	res, err := server.store.GetRows(ctx, repo.GetRowsParams{Uid: req.User, Tablename: req.Table})
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, res)
-}
-
 func (server *HttpServer) insertRows(ctx *gin.Context) {
 	var req insertRowsRequest
 	var uri insertRowsRequestUri
@@ -151,6 +132,7 @@ func (server *HttpServer) insertRows(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, MessageResponse{Message: fmt.Sprintf("%d rows inserted in %s", len(req.Rows), uri.Table)})
 }
 
+// -----------------------------------------------------------------------------------------------------
 type addColumnsParams struct {
 	Columns []repo.Column `json:"columns" binding:"required"`
 }
@@ -183,6 +165,7 @@ func (server *HttpServer) addColumns(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, updatedTable)
 }
 
+// -----------------------------------------------------------------------------------------------------
 type dropColumnsParams struct {
 	Columns []string `json:"columns" binding:"required"`
 }
@@ -214,6 +197,7 @@ func (server *HttpServer) deleteColumns(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, updatedTable)
 }
 
+// -----------------------------------------------------------------------------------------------------
 type deleteRowsUriParams struct {
 	Table  string `uri:"table" validate:"required,alphanum,min=1"`
 	UserID int64  `uri:"user" validate:"required,numeric,min=1"`
@@ -245,4 +229,89 @@ func (server *HttpServer) deleteRows(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, MessageResponse{Message: "Done"})
+}
+
+// -----------------------------------------------------------------------------------------------------
+
+type getRowsParams struct {
+	User  int32  `uri:"user" binding:"required,numeric,min=1"`
+	Table string `uri:"table" binding:"required,gte=3,lte=50"`
+}
+
+type getRowsBodyParams struct {
+	Rows map[string]interface{} `json:"rows" binding:""`
+}
+
+func (server *HttpServer) getRows(ctx *gin.Context) {
+	var uri getRowsParams
+	var req getRowsBodyParams
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		if err.Error() != "EOF" {
+			// IF the Body is empty we will use normal mode
+			result, err := server.store.GetRows(ctx, repo.GetRowsParams{Uid: uri.User, Tablename: uri.Table})
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+				return
+			}
+			ctx.JSON(http.StatusBadRequest, result)
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	result, err := server.store.GetRow(ctx, repo.GetRowParams{Uid: uri.User, Table: uri.Table, Rows: req.Rows})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, result)
+
+	// columns := make([]string, len(req.Rows))
+	// i := 0
+	// for col, v := range req.Rows {
+	// 	if col != "&" {
+	// 		// These are normal Columns
+	// 		columns[i] = col
+	// 		i++
+	// 		println(fmt.Sprintf(" column: %v", col))
+	// 		for _, value := range v {
+	// 			println(fmt.Sprintf("%v", value))
+	// 		}
+	// 	} else {
+	// 		i++
+	// 		// This is & (and)
+	// 		// example:  "&": [ { "name": [ "user 1", "user two" ] } ]
+	// 		for _, ndval := range v {
+	// 			// extract column names
+	// 			println(fmt.Sprintf("Type : %T", ndval))
+	// 			ndmap, isndmap := ndval.(map[string]any)
+	// 			if isndmap {
+	// 				ndColumns := make([]string, len(ndmap))
+	// 				ni := 0
+	// 				for ndCol, ndv := range ndmap {
+	// 					ndColumns[ni] = ndCol
+	// 					ni++
+
+	// 					println(fmt.Sprintf("%v", ndCol))
+	// 					ndValues, islist := ndv.([]interface{})
+	// 					if islist {
+	// 						for _, ndvalue := range ndValues {
+	// 							println(fmt.Sprintf("%v", ndvalue))
+	// 						}
+	// 					}
+	// 				}
+	// 			} else {
+	// 				println("No a map[string][]interface{}")
+	// 			}
+	// 		}
+
+	// 	}
+
+	// }
+
 }

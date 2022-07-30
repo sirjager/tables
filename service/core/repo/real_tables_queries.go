@@ -515,61 +515,6 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 	return err
 }
 
-type GetRowsParams struct {
-	Uid       int32  `json:"uid" validate:"required,numeric,min=1"`
-	Tablename string `json:"table" validate:"required,alphanum,min=1"`
-}
-
-func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error) {
-	var err error
-	validate := validator.New()
-	err = validate.Struct(arg)
-	if err != nil {
-		return nil, err
-	}
-
-	query := " SELECT * FROM " + arg.Tablename + " ;"
-	rows, err := q.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	cols, _ := rows.Columns()
-
-	// This will be main result and will have list of col:value
-	var results []any
-
-	// Now we will do some hard core magic i barely understand
-	for rows.Next() {
-		// Create a slice of interface{}'s to represent each column,
-		// and a second slice to contain pointers to each item in the columns slice.
-		columns := make([]interface{}, len(cols))
-		columnPointers := make([]interface{}, len(cols))
-		for i := range columns {
-			columnPointers[i] = &columns[i]
-		}
-
-		// Scan the result into the column pointers...
-		if err := rows.Scan(columnPointers...); err != nil {
-			return nil, err
-		}
-
-		// Create our map, and retrieve the value for each column from the pointers slice,
-		// storing it in the map with the name of the column as the key.
-		m := make(map[string]interface{})
-		for i, colName := range cols {
-			val := columnPointers[i].(*interface{})
-			m[colName] = *val
-		}
-		fields := make(map[string]interface{})
-		for k, v := range m {
-			fields[k] = v
-		}
-		results = append(results, fields)
-	}
-	return results, err
-}
-
 type DeleteRowsParams struct {
 	Table  string                   `json:"table" validate:"required,alphanum,min=1"`
 	UserID int64                    `json:"useer" validate:"required,numeric,min=1"`
@@ -642,4 +587,511 @@ func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
 	}
 	_, err = q.db.ExecContext(ctx, mainExecuteString)
 	return err
+}
+
+type GetRowsParams struct {
+	Uid       int32  `json:"uid" validate:"required,numeric,min=1"`
+	Tablename string `json:"table" validate:"required,alphanum,min=1"`
+}
+
+func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error) {
+	var err error
+	validate := validator.New()
+	err = validate.Struct(arg)
+	if err != nil {
+		return nil, err
+	}
+
+	query := " SELECT * FROM " + arg.Tablename + " ;"
+	rows, err := q.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	cols, _ := rows.Columns()
+
+	// This will be main result and will have list of col:value
+	var results []any
+
+	// Now we will do some hard core magic i barely understand
+	for rows.Next() {
+		// Create a slice of interface{}'s to represent each column,
+		// and a second slice to contain pointers to each item in the columns slice.
+		columns := make([]interface{}, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		// Scan the result into the column pointers...
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, err
+		}
+
+		// Create our map, and retrieve the value for each column from the pointers slice,
+		// storing it in the map with the name of the column as the key.
+		m := make(map[string]interface{})
+		for i, colName := range cols {
+			val := columnPointers[i].(*interface{})
+			m[colName] = *val
+		}
+		fields := make(map[string]interface{})
+		for k, v := range m {
+			fields[k] = v
+		}
+		results = append(results, fields)
+	}
+	return results, err
+}
+
+type GetRowParams struct {
+	Uid   int32                  `json:"uid" validate:"required,numeric,min=1"`
+	Table string                 `json:"table" validate:"required,alphanum,min=1"`
+	Rows  map[string]interface{} `json:"rows" validate:""`
+}
+
+func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
+	var err error
+	validate := validator.New()
+	err = validate.Struct(arg)
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		So if the request is customized then we expect the request in
+		below format.
+		{
+			"rows": {
+		        "column_name" : [ "value to match","value to match" ] /
+		    }
+		}
+		Kepoint :
+			1. If the value is null then simply pass null
+
+		# Suppose we have table with columns: id(integer), name(varchar/text), verified(boolean)
+		Scenarios :
+		1. Request is to get all the rows where id = 1. so the request would look like
+			 {
+				"rows": {
+					"id" : [ 1 ]
+				}
+			}
+			Result will be a list of all the rows where id = 1
+		2. Request is to get all the rows where id = 3, 4, 5 . so the request would look like
+			 {
+				"rows": {
+					"id" : [ 3, 4, 5 ]
+				}
+			}
+			Result will be a list of  all the rows where id = 3 , 4 , 5
+		3. Request is to get all the rows where
+			name = "John Doe", "Elsa"  or id = 256 . so the request would look like
+			{
+				"rows": {
+					"id" : [ 256 ],
+					"name" : [ "John Doe","Elsa" ]
+				}
+			}
+			Result will be a list of  all the rows where either name is "John Doe", "Elsa" or id = 256
+			No Rows will be repeated in the result. Even if John Doe has id 256.
+			This is Equivalted to OR in SQL
+		4. Request is to get all the rows where
+			name = null (NULL/ NIL) and has verifed = false. So the request will look like
+			{
+				"rows" : {
+					"name" : [ null ],
+					"&" : {
+						"verified" : [ "false" ]
+					}
+				}
+			}
+			So this "&" will make sure that our result has both
+			name = null and verified = false
+			This is equivaltent to
+			SELECT * FROM tablename WHERE name is NULL and verified = false ;
+
+		5. Table users : id, firstname, lastname, email, username, hashedpass, phone, isBlocked, isVerified
+			Request is to fetch all the users where
+			firstname = null, lastname = null, isBlocked = true  and isVerified = false
+			// for some reason we just want to fetch all the users with above conditions then
+			request will look like:
+				{
+					"rows" : {
+						"&" : {
+							"firstname" : [null],
+							"lastname" : [null],
+							"isBlocked": [true],
+							"isVerified": [false]
+						}
+					}
+				}
+			So the result will be a list of users where all the conditions match
+			This is equivalent to
+			SELECT * FROM tablename
+				WHERE firstname is null
+				AND lastname is null
+				AND isBlocked = true
+				AND isVerified = false ;
+
+			response : [
+				{
+					"id" : 645,
+					"firstname" null,
+					"lastname" null,
+					"lastname" null,
+					"email" "something.@email.com",
+					"username" "someusername",
+					"hashedpass" "somehasedpass",
+					"phone" "some phone number",
+					"isBlocked" : true,
+					"isVerified" : false
+				}
+				...
+			]
+	*/
+
+	table, err := q.GetTableWhereName(ctx, arg.Table)
+
+	if err != nil {
+		return nil, err
+	}
+
+	mytable, err := FormatTableEntryToTable(table)
+	if err != nil {
+		return nil, err
+	}
+
+	/* Sample request :
+	{ "rows":
+		{
+			"verified": [ null ],
+			"&": {
+					"name": [ "user one" ]
+				}
+		}
+	}
+	*/
+
+	// Column Statements
+	// allColStrings := ""
+	var all_columns []string
+	orRows := make(map[string]interface{})
+	var andRows map[string]interface{}
+
+	for col, vals := range arg.Rows {
+		if col != "&" {
+			orRows[col] = vals
+			all_columns = append(all_columns, col)
+		} else {
+			andRowMap, isMap := vals.(map[string]interface{})
+			if !isMap {
+				return nil, fmt.Errorf("values inside & should be a map")
+			}
+			andRows = andRowMap
+			for ncol := range andRowMap {
+				all_columns = append(all_columns, ncol)
+			}
+		}
+	}
+
+	// Now we First Check if any of the column doesnt exists
+	var columnThatDontExists []string = []string{}
+	for _, c := range all_columns {
+		exists := false
+		for _, col := range mytable.Columns {
+			if c == col.Name {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			columnThatDontExists = append(columnThatDontExists, c)
+		}
+	}
+	if len(columnThatDontExists) != 0 {
+		if len(columnThatDontExists) == 1 {
+			return nil, fmt.Errorf("column %v does not exits", columnThatDontExists)
+		}
+		return nil, fmt.Errorf("columns %v does not exits", columnThatDontExists)
+	}
+
+	// Example of Main string:
+	// if and -> SELECT * FROM tablename WHERE name IN ('John','Elsa') AND verified = true
+	// if or ->  SELECT * FROM tablename WHERE email IN ('user1@email.com','user2@email.com') OR username IN ('user1','user2') OR name IN ('user one','user two')
+	// if or+and ->  SELECT * FROM tablename WHERE email IN ('user1@email.com','user2@email.com') OR username IN ('user1','user2') AND verified = false
+
+	// First we loop over orColumns
+	// ori = key name(column name) , orv = value of item at ori
+	println(andRows)
+
+	var all_or_strings []string = []string{}
+
+	for ork, orv := range orRows {
+
+		// Goal is to make string like for non boolean columns:  name IN ('John','Elsa') , id IN (1,34,123)
+		// Goal is to make string like for boolean columns :  verified = false
+
+		// We also need to get data type of column
+		dtype := ""
+		// for datatype we need to loop over mytable.columns
+		for _, mycol := range mytable.Columns {
+			// if it is a same column
+			if ork == mycol.Name {
+				dtype = mycol.Type
+				break
+			}
+		}
+
+		// Now we need to add values and build column string
+		// for that we need to loop over orv
+		// orv is a interface for now we need a list and it must be list
+
+		orvList, isList := orv.([]any)
+		if !isList {
+			return nil, fmt.Errorf("values of %v must be an arrary", ork)
+		}
+
+		// At this point our columnString = name
+		// In general columnString = columnname
+
+		// For any boolean column our row can only match true or false
+		// so a single row can either true or false
+
+		// we will make sure our list contains only one item in list of any boolean column
+		if dtype == "boolean" {
+			if len(orvList) == 0 {
+				return nil, fmt.Errorf("value for boolean column can not be empty")
+			}
+			if len(orvList) != 1 {
+				return nil, fmt.Errorf("%v is a boolean column and must have one boolean value", ork)
+			}
+			// if we have boolean column suppose: verified. then we want verified = true
+			// not just anything like : verified = yaga yaga or antthing
+			// we need to make sure that v is a boolean not just anyting
+
+			booleanValue, isBoolean := orvList[0].(bool)
+			if !isBoolean {
+				return nil, fmt.Errorf("invalid value=(%v).  %v is a boolean column and must have one boolean value", orvList[0], ork)
+			}
+
+			all_or_strings = append(all_or_strings, fmt.Sprintf("%v = %v", ork, booleanValue))
+
+			// now for any boolean column we will have
+			// columnname = false
+			// example verified = true
+		} else if dtype == "text" || dtype == "varchar" {
+			// if column is of text/varchar data type we need to wrap value in single quote
+			// sql string values needs to be wrapped in a single quote if it is not a single word
+
+			// we will also need to make sure that list is not empty
+
+			if len(orvList) == 0 {
+				return nil, fmt.Errorf("values can not be empty")
+			}
+
+			valueString := ""
+			// now we will add values
+			// for any text column: valueString = 'any string 1', 'anystring 2'
+			// goal = valueString = 'John', 'elsa','any name'
+
+			// we will loop over orvlist
+
+			for i, v := range orvList {
+				isLast := i == len(orvList)-1
+				if isLast {
+					if v != nil {
+						valueString += fmt.Sprintf("'%v'", v)
+					} else {
+						valueString += "NULL"
+					}
+				} else {
+					if v != nil {
+						valueString += fmt.Sprintf("'%v',", v)
+					} else {
+						valueString += "NULL,"
+					}
+				}
+			}
+			all_or_strings = append(all_or_strings, fmt.Sprintf("%v IN (%v)", ork, valueString))
+
+		} else {
+			if len(orvList) == 0 {
+				return nil, fmt.Errorf("values can not be empty")
+			}
+
+			valueString := ""
+
+			// we will loop over orvlist
+			for i, v := range orvList {
+				isLast := i == len(orvList)-1
+				if isLast {
+					if v != nil {
+						valueString += fmt.Sprintf("%v", v)
+					} else {
+						valueString += "NULL"
+					}
+				} else {
+					if v != nil {
+						valueString += fmt.Sprintf("%v,", v)
+					} else {
+						valueString += "NULL,"
+					}
+				}
+			}
+			all_or_strings = append(all_or_strings, fmt.Sprintf(" %v IN (%v)", ork, valueString))
+		}
+
+	}
+
+	// Now we will loop over rows inside andRows
+	// nk = key(column name)  nval = value of nk
+	println(fmt.Sprintf("%v", all_or_strings))
+
+	var all_and_strings []string = []string{}
+
+	for nk, nval := range andRows {
+		// same as or  strings
+
+		dtype := ""
+
+		for _, mycol := range mytable.Columns {
+			if nk == mycol.Name {
+				dtype = mycol.Type
+				break
+			}
+		}
+
+		nvList, isList := nval.([]any)
+		if !isList {
+			return nil, fmt.Errorf("values of %v must be an arrary", nk)
+		}
+
+		if dtype == "boolean" {
+			if len(nvList) == 0 {
+				return nil, fmt.Errorf("value for boolean column can not be empty")
+			}
+			if len(nvList) != 1 {
+				return nil, fmt.Errorf("%v is a boolean column and must have one boolean value", nk)
+			}
+			booleanValue, isBoolean := nvList[0].(bool)
+			if !isBoolean {
+				return nil, fmt.Errorf("invalid value=(%v).  %v is a boolean column and must have one boolean value", nvList[0], nk)
+			}
+
+			all_and_strings = append(all_and_strings, fmt.Sprintf("%v = %v", nk, booleanValue))
+		} else if dtype == "text" || dtype == "varchar" {
+			if len(nvList) == 0 {
+				return nil, fmt.Errorf("values can not be empty")
+			}
+
+			valueString := ""
+			for i, v := range nvList {
+				isLast := i == len(nvList)-1
+				if isLast {
+					if v != nil {
+						valueString += fmt.Sprintf("'%v'", v)
+					} else {
+						valueString += "NULL"
+					}
+				} else {
+					if v != nil {
+						valueString += fmt.Sprintf("'%v',", v)
+					} else {
+						valueString += "NULL,"
+					}
+				}
+			}
+			all_and_strings = append(all_and_strings, fmt.Sprintf("%v IN (%v)", nk, valueString))
+		} else {
+			if len(nvList) == 0 {
+				return nil, fmt.Errorf("values can not be empty")
+			}
+
+			valueString := ""
+
+			// we will loop over orvlist
+			for i, v := range nvList {
+				isLast := i == len(nvList)-1
+				if isLast {
+					if v != nil {
+						valueString += fmt.Sprintf("%v", v)
+					} else {
+						valueString += "NULL"
+					}
+				} else {
+					if v != nil {
+						valueString += fmt.Sprintf("%v,", v)
+					} else {
+						valueString += "NULL,"
+					}
+				}
+			}
+			all_and_strings = append(all_and_strings, fmt.Sprintf(" %v IN (%v)", nk, valueString))
+		}
+	}
+	println(fmt.Sprintf("%v", all_and_strings))
+
+	mainString := ""
+
+	for i, str := range all_or_strings {
+		if i == len(all_or_strings)-1 {
+			mainString += fmt.Sprintf(" OR %v", str)
+		} else {
+			if i == 0 {
+				mainString += fmt.Sprintf("%v", str)
+			} else {
+				mainString += fmt.Sprintf(" OR %v", str)
+			}
+		}
+	}
+	for i, str := range all_and_strings {
+		if i == len(all_and_strings)-1 {
+			mainString += fmt.Sprintf(" AND %v", str)
+		} else {
+			mainString += fmt.Sprintf(" AND %v", str)
+		}
+	}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE %v ;", arg.Table, mainString)
+	rows, err := q.db.QueryContext(ctx, query)
+	if err != nil {
+		println(query)
+		println(err.Error())
+		return nil, err
+	}
+
+	cols, _ := rows.Columns()
+
+	// This will be main result and will have list of col:value
+	var results []any
+
+	// Now we will do some hard core magic i barely understand
+	for rows.Next() {
+		// Create a slice of interface{}'s to represent each column,
+		// and a second slice to contain pointers to each item in the columns slice.
+		columns := make([]interface{}, len(cols))
+		columnPointers := make([]interface{}, len(cols))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+
+		// Scan the result into the column pointers...
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, err
+		}
+
+		// Create our map, and retrieve the value for each column from the pointers slice,
+		// storing it in the map with the name of the column as the key.
+		m := make(map[string]interface{})
+		for i, colName := range cols {
+			val := columnPointers[i].(*interface{})
+			m[colName] = *val
+		}
+		fields := make(map[string]interface{})
+		for k, v := range m {
+			fields[k] = v
+		}
+		results = append(results, fields)
+	}
+	return results, err
 }

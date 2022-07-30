@@ -84,9 +84,9 @@ func (server *HttpServer) setupHttpRouter() {
 	authenticatedRoute.DELETE("/users/:user/tables/:table/columns", server.deleteColumns)
 
 	// Manage Rows
+	authenticatedRoute.GET("/users/:user/tables/:table/rows", server.getRows)
 	authenticatedRoute.POST("/users/:user/tables/:table/rows", server.insertRows)
 	authenticatedRoute.DELETE("/users/:user/tables/:table/rows", server.deleteRows)
-	authenticatedRoute.GET("/users/:user/tables/:table/rows", server.getRows)
-	authenticatedRoute.GET("/users/:user/tables/:table/rows:row", server.getRows)
+
 	server.router = router
 }
