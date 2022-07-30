@@ -42,6 +42,8 @@ type Querier interface {
 	GetUser(ctx context.Context, id int64) (CoreUser, error)
 	GetUserWhereEmail(ctx context.Context, email string) (CoreUser, error)
 	GetUserWhereUsername(ctx context.Context, username string) (CoreUser, error)
+	// -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
+	UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (CoreTable, error)
 	UpdateUserBlocked(ctx context.Context, arg UpdateUserBlockedParams) (CoreUser, error)
 	// ------------------------------ UPDATE ONE CORE_USERS <-> CORE_USERS  ------------------------------
 	UpdateUserFullName(ctx context.Context, arg UpdateUserFullNameParams) (CoreUser, error)

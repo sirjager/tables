@@ -78,8 +78,15 @@ func (server *HttpServer) setupHttpRouter() {
 	authenticatedRoute.GET("/users/:user/tables", server.listTables)
 	authenticatedRoute.GET("/users/:user/tables/:table", server.getTable)
 	authenticatedRoute.DELETE("/users/:user/tables/:table", server.deleteTable)
+
+	// Manage Columns
+	authenticatedRoute.POST("/users/:user/tables/:table/columns", server.addColumns)
+	authenticatedRoute.DELETE("/users/:user/tables/:table/columns", server.deleteColumns)
+
 	// Manage Rows
 	authenticatedRoute.GET("/users/:user/tables/:table/rows", server.getRows)
 	authenticatedRoute.POST("/users/:user/tables/:table/rows", server.insertRows)
+	authenticatedRoute.DELETE("/users/:user/tables/:table/rows", server.deleteRows)
+
 	server.router = router
 }

@@ -1,13 +1,10 @@
 package core_repo
 
-// import (
-// 	"context"
-// 	"testing"
-
-// 	"github.com/SirJager/tables/service/core/utils"
-// 	"github.com/go-playground/validator/v10"
-// 	"github.com/stretchr/testify/require"
-// )
+import (
+	"context"
+	"fmt"
+	"testing"
+)
 
 // func TestCreateTableTx(t *testing.T) {
 // 	store := NewStore(testDb)
@@ -99,3 +96,28 @@ package core_repo
 // 		require.NoError(t, err)
 // 	}
 // }
+
+func TestAddColumns(t *testing.T) {
+	store := NewStore(testDb)
+	_, err := store.AddColumnTx(context.Background(), AddColumnsTxParams{
+		Table: "mytable",
+		Columns: []Column{
+			{Name: "col1", Type: "varchar", Length: 50, Unique: true, Required: true},
+			{Name: "col2", Type: "integer", Precision: 10, Scale: 4, Unique: true, Required: true},
+		},
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func TestDropColumns(t *testing.T) {
+	store := NewStore(testDb)
+	_, err := store.DropColumnTx(context.Background(), DropColumnsTxParams{
+		Table:   "mytable",
+		Columns: []string{"col1", "col2"},
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}

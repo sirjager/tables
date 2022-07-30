@@ -2,7 +2,6 @@ package core_repo
 
 import (
 	"context"
-	"fmt"
 )
 
 type ColumnValue struct {
@@ -39,17 +38,16 @@ func (q *Queries) InfoGetCount(ctx context.Context, arg InfoGetCountParams) (int
 	return count, err
 }
 
-const infoGetCoreTables = "SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema';"
+const infoGetCoreTables = `-- name: Display ALl Tables
+SELECT tablename,schemaname,tableowner 
+FROM pg_catalog.pg_tables 
+WHERE schemaname != 'pg_catalog' 
+AND schemaname != 'information_schema';`
 
 type InfoGetCoreTable struct {
-	SchemaName  string      `json:"schemaname"`
-	TableName   string      `json:"tablename"`
-	TableOwner  string      `json:"tableowner"`
-	TableSpace  interface{} `json:"tablespace"`
-	HasIndexes  bool        `json:"hasindexes"`
-	HasRules    bool        `json:"hasrules"`
-	HasTriggers bool        `json:"hastriggers"`
-	RowSecurity bool        `json:"rowsecurity"`
+	SchemaName string `json:"schemaname"`
+	TableName  string `json:"tablename"`
+	TableOwner string `json:"tableowner"`
 }
 
 func (q *Queries) InfoGetCoreTables(ctx context.Context) ([]InfoGetCoreTable, error) {
@@ -66,11 +64,6 @@ func (q *Queries) InfoGetCoreTables(ctx context.Context) ([]InfoGetCoreTable, er
 			&table.SchemaName,
 			&table.TableName,
 			&table.TableOwner,
-			&table.TableSpace,
-			&table.HasIndexes,
-			&table.HasRules,
-			&table.HasTriggers,
-			&table.RowSecurity,
 		)
 		if err != nil {
 			return nil, err
@@ -83,10 +76,112 @@ func (q *Queries) InfoGetCoreTables(ctx context.Context) ([]InfoGetCoreTable, er
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	for _, item := range items {
-		println(fmt.Sprintf("%s", item.SchemaName))
-		println(fmt.Sprintf("%s", item.TableName))
-		println(fmt.Sprintf("%s", item.TableOwner))
+	return items, nil
+}
+
+const infoGetTableSchema = `-- name: Get Table Schema
+SELECT
+    ordinal_position as "position",
+    column_name as "column",
+    data_type as "type",
+    is_nullable as "nullable",
+	character_maximum_length as "length",
+    numeric_precision as "precision",
+    numeric_scale as "scale",
+    column_default as "default" 
+FROM information_schema.columns
+WHERE table_name = $1;`
+
+type InfoColumnSchema struct {
+	Position  int32  `json:"position"`
+	Column    string `json:"column"`
+	Type      string `json:"type"`
+	Primary   bool   `json:"primary"`
+	Unique    bool   `json:"unique"`
+	Nullable  bool   `json:"nullable"`
+	Length    int64  `json:"length"`
+	Precision int32  `json:"precision"`
+	Scale     int32  `json:"scale"`
+	Default   string `json:"default"`
+}
+
+func (q *Queries) InfoGetTableSchema(ctx context.Context, tablename string) ([]InfoColumnSchema, error) {
+	rows, err := q.db.QueryContext(ctx, infoGetTableSchema, tablename)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []InfoColumnSchema = []InfoColumnSchema{}
+
+	for rows.Next() {
+		var table InfoColumnSchema
+
+		var _nullable interface{}
+		var _length interface{}
+		var _precision interface{}
+		var _scale interface{}
+		var _default interface{}
+
+		err := rows.Scan(
+			&table.Position,
+			&table.Column,
+			&table.Type,
+			&_nullable,
+			&_length,
+			&_precision,
+			&_scale,
+			&_default,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if _nullable != nil {
+			vnullable, isString := _nullable.(string)
+			if isString {
+				if vnullable == "NO" {
+					table.Nullable = false
+				} else {
+					table.Nullable = true
+				}
+			} else {
+				table.Nullable = true
+			}
+		}
+		if _length != nil {
+			val, isInt64 := _length.(int64)
+			if isInt64 {
+				table.Length = val
+			}
+		}
+		if _precision != nil {
+			val, isInt32 := _precision.(int32)
+			if isInt32 {
+				table.Precision = val
+			}
+		}
+		if _scale != nil {
+			val, isInt32 := _scale.(int32)
+			if isInt32 {
+				table.Precision = val
+			}
+		}
+		if _default != nil {
+			val, isString := _default.(string)
+			if isString {
+				table.Default = val
+			} else {
+				table.Default = ""
+			}
+		}
+		items = append(items, table)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return items, nil
 }
