@@ -949,7 +949,6 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 
 	// Now we will loop over rows inside andRows
 	// nk = key(column name)  nval = value of nk
-	println(fmt.Sprintf("%v", all_or_strings))
 
 	var all_and_strings []string = []string{}
 
@@ -1033,7 +1032,6 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			all_and_strings = append(all_and_strings, fmt.Sprintf(" %v IN (%v)", nk, valueString))
 		}
 	}
-	println(fmt.Sprintf("%v", all_and_strings))
 
 	mainString := ""
 	var all_string []string = []string{}
@@ -1057,9 +1055,9 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 		}
 	}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE %v ;", arg.Table, mainString)
-	println(query)
 	rows, err := q.db.QueryContext(ctx, query)
 	if err != nil {
+		println(query)
 		println(err.Error())
 		return nil, err
 	}
@@ -1067,7 +1065,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 	cols, _ := rows.Columns()
 
 	// This will be main result and will have list of col:value
-	var results []any
+	var results []any = []any{}
 
 	// Now we will do some hard core magic i barely understand
 	for rows.Next() {
