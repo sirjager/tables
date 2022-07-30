@@ -658,6 +658,10 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 		return nil, err
 	}
 
+	if len(arg.Rows) == 0 {
+		return nil, fmt.Errorf("no filters provided")
+	}
+
 	/*
 		So if the request is customized then we expect the request in
 		below format.
@@ -823,7 +827,6 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 
 	// First we loop over orColumns
 	// ori = key name(column name) , orv = value of item at ori
-	println(andRows)
 
 	var all_or_strings []string = []string{}
 
@@ -887,7 +890,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			// we will also need to make sure that list is not empty
 
 			if len(orvList) == 0 {
-				return nil, fmt.Errorf("values can not be empty")
+				return nil, fmt.Errorf("%v can not have an empty array", ork)
 			}
 
 			valueString := ""
@@ -917,7 +920,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 
 		} else {
 			if len(orvList) == 0 {
-				return nil, fmt.Errorf("values can not be empty")
+				return nil, fmt.Errorf("%v can not have an empty arrary", ork)
 			}
 
 			valueString := ""
@@ -982,7 +985,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			all_and_strings = append(all_and_strings, fmt.Sprintf("%v = %v", nk, booleanValue))
 		} else if dtype == "text" || dtype == "varchar" {
 			if len(nvList) == 0 {
-				return nil, fmt.Errorf("values can not be empty")
+				return nil, fmt.Errorf("%v can not have an empty arrary", nk)
 			}
 
 			valueString := ""
@@ -1005,7 +1008,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			all_and_strings = append(all_and_strings, fmt.Sprintf("%v IN (%v)", nk, valueString))
 		} else {
 			if len(nvList) == 0 {
-				return nil, fmt.Errorf("values can not be empty")
+				return nil, fmt.Errorf("%v can not have an empty arrary", nk)
 			}
 
 			valueString := ""
@@ -1033,29 +1036,30 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 	println(fmt.Sprintf("%v", all_and_strings))
 
 	mainString := ""
+	var all_string []string = []string{}
 
-	for i, str := range all_or_strings {
-		if i == len(all_or_strings)-1 {
-			mainString += fmt.Sprintf(" OR %v", str)
+	for _, str := range all_or_strings {
+		if len(all_string) != 0 {
+			mainString += fmt.Sprintf("OR %v", str)
+			all_string = append(all_string, str)
 		} else {
-			if i == 0 {
-				mainString += fmt.Sprintf("%v", str)
-			} else {
-				mainString += fmt.Sprintf(" OR %v", str)
-			}
+			mainString += fmt.Sprintf("%v", str)
+			all_string = append(all_string, str)
 		}
 	}
-	for i, str := range all_and_strings {
-		if i == len(all_and_strings)-1 {
+	for _, str := range all_and_strings {
+		if len(all_string) != 0 {
 			mainString += fmt.Sprintf(" AND %v", str)
+			all_string = append(all_string, str)
 		} else {
-			mainString += fmt.Sprintf(" AND %v", str)
+			mainString += fmt.Sprintf(" %v", str)
+			all_string = append(all_string, str)
 		}
 	}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE %v ;", arg.Table, mainString)
+	println(query)
 	rows, err := q.db.QueryContext(ctx, query)
 	if err != nil {
-		println(query)
 		println(err.Error())
 		return nil, err
 	}

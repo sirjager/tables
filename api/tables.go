@@ -250,8 +250,8 @@ func (server *HttpServer) getRows(ctx *gin.Context) {
 		return
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		if err.Error() != "EOF" {
-			// IF the Body is empty we will use normal mode
+		if err.Error() == "EOF" {
+			// IF the Body is empty we will send all records
 			result, err := server.store.GetRows(ctx, repo.GetRowsParams{Uid: uri.User, Tablename: uri.Table})
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -264,54 +264,11 @@ func (server *HttpServer) getRows(ctx *gin.Context) {
 		return
 	}
 
+	// If Body is not empty
 	result, err := server.store.GetRow(ctx, repo.GetRowParams{Uid: uri.User, Table: uri.Table, Rows: req.Rows})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, result)
-
-	// columns := make([]string, len(req.Rows))
-	// i := 0
-	// for col, v := range req.Rows {
-	// 	if col != "&" {
-	// 		// These are normal Columns
-	// 		columns[i] = col
-	// 		i++
-	// 		println(fmt.Sprintf(" column: %v", col))
-	// 		for _, value := range v {
-	// 			println(fmt.Sprintf("%v", value))
-	// 		}
-	// 	} else {
-	// 		i++
-	// 		// This is & (and)
-	// 		// example:  "&": [ { "name": [ "user 1", "user two" ] } ]
-	// 		for _, ndval := range v {
-	// 			// extract column names
-	// 			println(fmt.Sprintf("Type : %T", ndval))
-	// 			ndmap, isndmap := ndval.(map[string]any)
-	// 			if isndmap {
-	// 				ndColumns := make([]string, len(ndmap))
-	// 				ni := 0
-	// 				for ndCol, ndv := range ndmap {
-	// 					ndColumns[ni] = ndCol
-	// 					ni++
-
-	// 					println(fmt.Sprintf("%v", ndCol))
-	// 					ndValues, islist := ndv.([]interface{})
-	// 					if islist {
-	// 						for _, ndvalue := range ndValues {
-	// 							println(fmt.Sprintf("%v", ndvalue))
-	// 						}
-	// 					}
-	// 				}
-	// 			} else {
-	// 				println("No a map[string][]interface{}")
-	// 			}
-	// 		}
-
-	// 	}
-
-	// }
-
 }
