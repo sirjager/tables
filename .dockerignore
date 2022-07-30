@@ -3,8 +3,11 @@
 **.env.**
 !example.env
 
+
 logs
 local
+
+build
 
 **.tmp
 **.tmp/**
@@ -12,4 +15,5 @@ local
 **.temp/**
 
 Makefile
+
 
