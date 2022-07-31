@@ -21,7 +21,7 @@ func LoadConfig(envpath string) (config ServerConfig, err error) {
 
 	viper.AddConfigPath(envpath)
 
-	viper.SetConfigName("local")
+	viper.SetConfigName("remote")
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
