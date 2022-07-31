@@ -18,14 +18,21 @@ type ServerConfig struct {
 }
 
 func LoadConfig(envpath string) (config ServerConfig, err error) {
+
 	viper.AddConfigPath(envpath)
+
 	viper.SetConfigName("local")
 	viper.SetConfigType("env")
+
 	viper.AutomaticEnv()
+
 	err = viper.ReadInConfig()
+
 	if err != nil {
 		return
 	}
+
 	err = viper.Unmarshal(&config)
+
 	return
 }

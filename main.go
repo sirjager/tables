@@ -44,8 +44,8 @@ func runDBMigration(migrationURL string, dbSource string) {
 	}
 
 	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("failed to migrate database to latest version:", err)
+		log.Fatal("Failed to migrate database to latest version:", err)
 	}
 
-	log.Println("database migration was successful")
+	log.Println("Database migration was successful")
 }
