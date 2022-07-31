@@ -44,7 +44,10 @@ func TestCreateTableTx(t *testing.T) {
 		require.Equal(t, arg.UserID, createdTable.UserID)
 		require.NotZero(t, createdTable.ID)
 
-		foundCreatedTable, err := store.GetTable(context.Background(), createdTable.ID)
+		foundCreatedTable, err := store.GetTableWhereNameAndUser(context.Background(), GetTableWhereNameAndUserParams{
+			Name:   createdTable.Name,
+			UserID: createdTable.UserID,
+		})
 		require.NoError(t, err)
 		require.NotEmpty(t, foundCreatedTable)
 

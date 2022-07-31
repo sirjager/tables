@@ -70,23 +70,23 @@ func (server *HttpServer) setupHttpRouter() {
 
 	// Authenticated Route
 	authenticatedRoute.GET("/users", server.listUsers)
-	authenticatedRoute.GET("/users/:user", server.getUser)
-	authenticatedRoute.DELETE("/users/:user", server.deleteUser)
+	authenticatedRoute.GET("/users/me", server.getUser)
+	authenticatedRoute.DELETE("/users/me", server.deleteUser)
 
 	// Manage Table
-	authenticatedRoute.POST("/users/:user/tables", server.createTable)
-	authenticatedRoute.GET("/users/:user/tables", server.listTables)
-	authenticatedRoute.GET("/users/:user/tables/:table", server.getTable)
-	authenticatedRoute.DELETE("/users/:user/tables/:table", server.deleteTable)
+	authenticatedRoute.POST("/tables", server.createTable)
+	authenticatedRoute.GET("/tables", server.listTables)
+	authenticatedRoute.GET("/tables/:table", server.getTable)
+	authenticatedRoute.DELETE("/tables/:table", server.deleteTable)
 
 	// Manage Columns
-	authenticatedRoute.POST("/users/:user/tables/:table/columns", server.addColumns)
-	authenticatedRoute.DELETE("/users/:user/tables/:table/columns", server.deleteColumns)
+	authenticatedRoute.POST("/tables/:table/columns", server.addColumns)
+	authenticatedRoute.DELETE("/tables/:table/columns", server.deleteColumns)
 
 	// Manage Rows
-	authenticatedRoute.GET("/users/:user/tables/:table/rows", server.getRows)
-	authenticatedRoute.POST("/users/:user/tables/:table/rows", server.insertRows)
-	authenticatedRoute.DELETE("/users/:user/tables/:table/rows", server.deleteRows)
+	authenticatedRoute.GET("/tables/:table/rows", server.getRows)
+	authenticatedRoute.POST("/tables/:table/rows", server.insertRows)
+	authenticatedRoute.DELETE("/tables/:table/rows", server.deleteRows)
 
 	server.router = router
 }

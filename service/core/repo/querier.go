@@ -33,9 +33,7 @@ type Querier interface {
 	GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]CoreTable, error)
 	GetSomeUsers(ctx context.Context, arg GetSomeUsersParams) ([]CoreUser, error)
 	// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-	GetTable(ctx context.Context, id int64) (CoreTable, error)
-	GetTableWhereIDAndUser(ctx context.Context, arg GetTableWhereIDAndUserParams) (CoreTable, error)
-	GetTableWhereName(ctx context.Context, name string) (CoreTable, error)
+	GetTableWhereNameAndUser(ctx context.Context, arg GetTableWhereNameAndUserParams) (CoreTable, error)
 	// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
 	GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreTable, error)
 	// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
