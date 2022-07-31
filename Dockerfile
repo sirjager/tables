@@ -9,7 +9,7 @@ RUN go build -o main main.go
 FROM alpine:3.16.1
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY --from=builder ./app/local.env .
+COPY --from=builder ./app/remote.env .
 COPY --from=builder ./app/scripts/start.sh .
 COPY --from=builder ./app/scripts/wait-for.sh .
 COPY --from=builder ./app/migrations ./migrations
