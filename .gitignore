@@ -3,11 +3,14 @@
 **.env.**
 !example.env
 
+.vscode
 
 logs
 local
 
 build
+
+
 
 **.tmp
 **.tmp/**

@@ -3,6 +3,7 @@
 **.env.**
 !example.env
 
+.vscode
 
 logs
 local
