@@ -122,6 +122,37 @@ func getColumnsFromSchema(coreTable CoreTable) ([]Column, error) {
 
 }
 
+func GenerateFieldString(fields []string, columns []Column) (string, error) {
+	fieldString := ""
+	if len(fields) == 0 {
+		return "*", nil
+	}
+	var fieldsThatDontExists []string = []string{}
+	for i, f := range fields {
+		exits := false
+		for _, c := range columns {
+			if f == c.Name {
+				exits = true
+				break
+			}
+		}
+		if !exits {
+			fieldsThatDontExists = append(fieldsThatDontExists, f)
+		} else {
+			// if last field
+			if i == len(fields)-1 {
+				fieldString += f
+			} else {
+				fieldString += f + ","
+			}
+		}
+	}
+	if len(fieldsThatDontExists) != 0 {
+		return "", fmt.Errorf("%v dont exits", fieldsThatDontExists)
+	}
+	return fieldString, nil
+}
+
 func ColumnsToJsonString(columns []Column) (string, error) {
 	// Build columns json string
 	column_bytes, err := json.Marshal(columns)
@@ -645,9 +676,10 @@ func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 }
 
 type GetRowParams struct {
-	Uid   int32                  `json:"uid" validate:"required,numeric,min=1"`
-	Table string                 `json:"table" validate:"required,alphanum,min=1"`
-	Rows  map[string]interface{} `json:"rows" validate:""`
+	Uid     int32                  `json:"uid" validate:"required,numeric,min=1"`
+	Table   string                 `json:"table" validate:"required,alphanum,min=1"`
+	Fields  []string               `json:"fields" validate:""`
+	Filters map[string]interface{} `json:"filters" validate:""`
 }
 
 func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
@@ -658,7 +690,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 		return nil, err
 	}
 
-	if len(arg.Rows) == 0 {
+	if len(arg.Filters) == 0 {
 		return nil, fmt.Errorf("no filters provided")
 	}
 
@@ -755,17 +787,6 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			]
 	*/
 
-	table, err := q.GetTableWhereName(ctx, arg.Table)
-
-	if err != nil {
-		return nil, err
-	}
-
-	mytable, err := FormatTableEntryToTable(table)
-	if err != nil {
-		return nil, err
-	}
-
 	/* Sample request :
 	{ "rows":
 		{
@@ -783,7 +804,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 	orRows := make(map[string]interface{})
 	var andRows map[string]interface{}
 
-	for col, vals := range arg.Rows {
+	for col, vals := range arg.Filters {
 		if col != "&" {
 			orRows[col] = vals
 			all_columns = append(all_columns, col)
@@ -798,6 +819,48 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			}
 		}
 	}
+
+	table, err := q.GetTableWhereName(ctx, arg.Table)
+
+	if err != nil {
+		return nil, err
+	}
+
+	mytable, err := FormatTableEntryToTable(table)
+	if err != nil {
+		return nil, err
+	}
+
+	//Check if whatever fields that is request exits else return error
+	// If no fields are requested then send all back
+
+	fieldsString, err := GenerateFieldString(arg.Fields, mytable.Columns)
+	if err != nil {
+		return nil, err
+	}
+
+	// if len(arg.Fields) == 0 {
+	// 	fieldsString = "*"
+	// } else {
+	// 	for i, f := range arg.Fields {
+	// 		exists := false
+	// 		isLast := i == len(arg.Fields)-1
+	// 		for _, c := range mytable.Columns {
+	// 			if f == c.Name {
+	// 				exists = true
+	// 				break
+	// 			}
+	// 		}
+	// 		if !exists {
+	// 			return nil, fmt.Errorf("column %v does not exits", f)
+	// 		}
+	// 		if isLast {
+	// 			fieldsString += f
+	// 		} else {
+	// 			fieldsString += f + ","
+	// 		}
+	// 	}
+	// }
 
 	// Now we First Check if any of the column doesnt exists
 	var columnThatDontExists []string = []string{}
@@ -1054,7 +1117,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 			all_string = append(all_string, str)
 		}
 	}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE %v ;", arg.Table, mainString)
+	query := fmt.Sprintf(`SELECT %v FROM  "public"."%v" WHERE %v ;`, fieldsString, arg.Table, mainString)
 	rows, err := q.db.QueryContext(ctx, query)
 	if err != nil {
 		println(query)

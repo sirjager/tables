@@ -239,7 +239,8 @@ type getRowsParams struct {
 }
 
 type getRowsBodyParams struct {
-	Rows map[string]interface{} `json:"rows" binding:""`
+	Fields  []string               `json:"fields" binding:""`
+	Filters map[string]interface{} `json:"filters" binding:""`
 }
 
 func (server *HttpServer) getRows(ctx *gin.Context) {
@@ -265,7 +266,7 @@ func (server *HttpServer) getRows(ctx *gin.Context) {
 	}
 
 	// If Body is not empty
-	result, err := server.store.GetRow(ctx, repo.GetRowParams{Uid: uri.User, Table: uri.Table, Rows: req.Rows})
+	result, err := server.store.GetRow(ctx, repo.GetRowParams{Uid: uri.User, Table: uri.Table, Fields: req.Fields, Filters: req.Filters})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
