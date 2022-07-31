@@ -18,15 +18,8 @@ SELECT * FROM "public"."core_tables" WHERE user_id = $1 LIMIT @limit_::int OFFSE
 
 -- -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
 
--- name: GetTable :one
-SELECT * FROM "public"."core_tables" WHERE id = $1 LIMIT 1;
-
--- name: GetTableWhereName :one
-SELECT * FROM "public"."core_tables" WHERE name = $1 LIMIT 1;
-
--- name: GetTableWhereIDAndUser :one
-SELECT * FROM "public"."core_tables" WHERE id = $1 AND user_id = $2 LIMIT 1;
-
+-- name: GetTableWhereNameAndUser :one
+SELECT * FROM "public"."core_tables" WHERE name = $1 AND user_id = $2 LIMIT 1;
 
 -- -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
 

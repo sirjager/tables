@@ -5,10 +5,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/SirJager/tables/middlewares"
 	repo "github.com/SirJager/tables/service/core/repo"
+	"github.com/SirJager/tables/service/core/tokens"
 	"github.com/SirJager/tables/service/core/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -208,19 +211,15 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 }
 
 // ------------------------------------------------------------------------------------------------------------
-type getUserUriParams struct {
-	User int64 `uri:"user" binding:"required,numeric,min=1"`
-}
 
 func (server *HttpServer) getUser(ctx *gin.Context) {
-	var req getUserUriParams
-	var err error
-	if err = ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserId, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
 		return
 	}
-
-	dbuser, err := server.store.GetUser(ctx, req.User)
+	dbuser, err := server.store.GetUser(ctx, int64(UserId))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
@@ -233,27 +232,19 @@ func (server *HttpServer) getUser(ctx *gin.Context) {
 }
 
 // ------------------------------------------------------------------------------------------------------------
-type UriParamsUid struct {
-	Uid int64 `uri:"uid" binding:"required,min=1"`
-}
-
 func (server *HttpServer) deleteUser(ctx *gin.Context) {
-	var req UriParamsUid
-	var err error
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserId, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
 		return
 	}
+	err = server.store.DeleteUser(ctx, int64(UserId))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err = server.store.DeleteUser(ctx, req.Uid)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, MessageResponse{Message: fmt.Sprintf("user=(%d) successfully deleted", req.Uid)})
+	ctx.JSON(http.StatusOK, MessageResponse{Message: fmt.Sprintf("user=(%d) successfully deleted", UserId)})
 
 }
 
@@ -261,10 +252,6 @@ func (server *HttpServer) deleteUser(ctx *gin.Context) {
 type listUsersRequest struct {
 	Limit int32 `form:"limit" binding:"numeric,min=0"`
 	Page  int32 `form:"page" binding:"numeric,min=0"`
-}
-
-type listUsersResponse struct {
-	Users []userAsResponse
 }
 
 func (server *HttpServer) listUsers(ctx *gin.Context) {
@@ -305,5 +292,5 @@ func (server *HttpServer) listUsers(ctx *gin.Context) {
 		users = append(users, removePassword(dbuser))
 	}
 
-	ctx.JSON(http.StatusOK, listUsersResponse{Users: users})
+	ctx.JSON(http.StatusOK, users)
 }

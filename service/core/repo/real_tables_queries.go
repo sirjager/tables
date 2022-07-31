@@ -15,7 +15,7 @@ import (
 type Column struct {
 	Name      string `json:"name" validate:"required,alphanum,gte=1,lte=30"`
 	Type      string `json:"type" validate:"required,oneof=integer smallint bigint decimal numeric real 'double precision' smallserial serial bigserial varchar char character text timestamp 'timestamp with time zone' 'timestamp without time zone' date 'time with time zone' time 'time without time zone' bool boolean bit 'bit varying' cidr inet macaddr macaddr8 json jsonb money uuid"`
-	Length    int32  `json:"length"`
+	Length    int64  `json:"length"`
 	Primary   bool   `json:"primary"`
 	Unique    bool   `json:"unique"`
 	Required  bool   `json:"required"`
@@ -182,7 +182,7 @@ func FormatTableEntryToTable(coreTable CoreTable) (RealTable, error) {
 
 type CreateTableTxParams struct {
 	Name    string   `json:"table" binding:"required,gte=3,lte=60"`
-	UserID  int64    `json:"uid" binding:"required,numeric,min=1"`
+	UserID  int64    `json:"user_id" binding:"required,numeric,min=1"`
 	Columns []Column `json:"columns" binding:"required"`
 }
 
@@ -228,7 +228,7 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 			return err
 		}
 
-		// Store created table details: name, user.uid , columns json as string
+		// Store created table details: name, user.id , columns json as string
 		created_table, err := q.CreateTable(ctx, CreateTableParams{Name: arg.Name, UserID: arg.UserID, Columns: columnsString})
 		// if any error occurs return err
 		// 1. Error will occur if table with same name aleady exists, uniqye key violation on tablename
@@ -294,7 +294,7 @@ func (store *SQLStore) AddColumnTx(ctx context.Context, arg AddColumnsTxParams) 
 			}
 		}
 
-		coretable, err := q.GetTableWhereName(ctx, arg.Table)
+		coretable, err := q.GetTableWhereNameAndUser(ctx, GetTableWhereNameAndUserParams{Name: arg.Table, UserID: arg.UserID})
 		if err != nil {
 			return err
 		}
@@ -351,7 +351,7 @@ func (store *SQLStore) AddColumnTx(ctx context.Context, arg AddColumnsTxParams) 
 
 type DropColumnsTxParams struct {
 	Table   string   `json:"table" binding:"required,gte=3,lte=60"`
-	UserID  int64    `json:"uid" binding:"required,numeric,min=1"`
+	UserID  int64    `json:"user_id" binding:"required,numeric,min=1"`
 	Columns []string `json:"columns" binding:"required"`
 }
 
@@ -359,11 +359,10 @@ func (store *SQLStore) DropColumnTx(ctx context.Context, arg DropColumnsTxParams
 	var result RealTable
 	err := store.execTx(ctx, func(q *Queries) error {
 		// First we will get table and check if it belongs to the user
-		coretable, err := q.GetTableWhereName(ctx, arg.Table)
+		coretable, err := q.GetTableWhereNameAndUser(ctx, GetTableWhereNameAndUserParams{Name: arg.Table, UserID: arg.UserID})
 		if err != nil {
 			return err
 		}
-
 		if coretable.UserID != arg.UserID {
 			// return error if table does not belongs to the user
 			return fmt.Errorf("table %s not found", arg.Table)
@@ -451,9 +450,9 @@ type KeyValueParams struct {
 	V string `json:"v"`
 }
 type InsertRowsParams struct {
-	Uid       int32              `json:"uid" validate:"required,numeric,min=1"`
-	Tablename string             `json:"table" validate:"required,alphanum,min=1"`
-	Rows      [][]KeyValueParams `json:"rows" validate:"required"`
+	Table  string             `json:"table" validate:"required,alphanum,min=1"`
+	UserID int64              `json:"user_id" validate:"required,numeric,min=1"`
+	Rows   [][]KeyValueParams `json:"rows" validate:"required"`
 }
 
 func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) error {
@@ -465,7 +464,7 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 	}
 	err = store.execTx(ctx, func(q *Queries) error {
 		// First we will retrieve table schema for column data type validation
-		table_schema, err := q.GetTableWhereName(ctx, arg.Tablename)
+		table_schema, err := q.GetTableWhereNameAndUser(ctx, GetTableWhereNameAndUserParams{Name: arg.Table, UserID: arg.UserID})
 		if err != nil {
 			return err
 		}
@@ -482,7 +481,7 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 		// 2. generate insert string : INSERT INTO tablename (c1,c2,c3) VALUES(v1,v2,v3);
 
 		for _, entry := range arg.Rows {
-			entry_string := "INSERT INTO " + arg.Tablename + " "
+			entry_string := "INSERT INTO " + arg.Table + " "
 			columns_string := ""
 			values_string := ""
 			for c, column := range entry {
@@ -499,7 +498,7 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 
 				// If column is not legin send back error with details
 				if !isLegitColumn {
-					return fmt.Errorf("column=(%s) not found in table=(%s)", column.K, arg.Tablename)
+					return fmt.Errorf("column=(%s) not found in table=(%s)", column.K, arg.Table)
 				}
 
 				// If column is legit then continue
@@ -561,7 +560,7 @@ func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
 	}
 
 	// Get Table schema
-	table, err := q.GetTableWhereName(ctx, arg.Table)
+	table, err := q.GetTableWhereNameAndUser(ctx, GetTableWhereNameAndUserParams{Name: arg.Table, UserID: arg.UserID})
 	if err != nil {
 		return err
 	}
@@ -621,8 +620,8 @@ func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
 }
 
 type GetRowsParams struct {
-	Uid       int32  `json:"uid" validate:"required,numeric,min=1"`
-	Tablename string `json:"table" validate:"required,alphanum,min=1"`
+	UserID int64  `json:"user_id" validate:"required,numeric,min=1"`
+	Table  string `json:"table" validate:"required,alphanum,min=1"`
 }
 
 func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error) {
@@ -633,7 +632,7 @@ func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 		return nil, err
 	}
 
-	query := " SELECT * FROM " + arg.Tablename + " ;"
+	query := " SELECT * FROM " + arg.Table + " ;"
 	rows, err := q.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -676,7 +675,7 @@ func (q *Queries) GetRows(ctx context.Context, arg GetRowsParams) ([]any, error)
 }
 
 type GetRowParams struct {
-	Uid     int32                  `json:"uid" validate:"required,numeric,min=1"`
+	UserID  int64                  `json:"user_id" validate:"required,numeric,min=1"`
 	Table   string                 `json:"table" validate:"required,alphanum,min=1"`
 	Fields  []string               `json:"fields" validate:""`
 	Filters map[string]interface{} `json:"filters" validate:""`
@@ -820,7 +819,7 @@ func (q *Queries) GetRow(ctx context.Context, arg GetRowParams) ([]any, error) {
 		}
 	}
 
-	table, err := q.GetTableWhereName(ctx, arg.Table)
+	table, err := q.GetTableWhereNameAndUser(ctx, GetTableWhereNameAndUserParams{Name: arg.Table, UserID: int64(arg.UserID)})
 
 	if err != nil {
 		return nil, err

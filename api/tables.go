@@ -3,15 +3,17 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/SirJager/tables/middlewares"
 	repo "github.com/SirJager/tables/service/core/repo"
+	"github.com/SirJager/tables/service/core/tokens"
 	"github.com/gin-gonic/gin"
 )
 
 type createTableRequest struct {
-	TableName string        `json:"table" binding:"required,gte=3,lte=60"`
-	Uid       int64         `json:"uid" binding:"required,numeric,min=1"`
-	Columns   []repo.Column `json:"columns" binding:"required"`
+	Table   string        `json:"table" binding:"required,gte=3,lte=60"`
+	Columns []repo.Column `json:"columns" binding:"required"`
 }
 
 func (server *HttpServer) createTable(ctx *gin.Context) {
@@ -20,7 +22,14 @@ func (server *HttpServer) createTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	mytable, err := server.store.CreateTableTx(ctx, repo.CreateTableTxParams{Name: req.TableName, UserID: req.Uid, Columns: req.Columns})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+
+	mytable, err := server.store.CreateTableTx(ctx, repo.CreateTableTxParams{Name: req.Table, UserID: int64(UserID), Columns: req.Columns})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -28,18 +37,14 @@ func (server *HttpServer) createTable(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, mytable)
 }
 
-type listTableParams struct {
-	User int64 `uri:"user" binding:"required,min=1"`
-}
-
 func (server *HttpServer) listTables(ctx *gin.Context) {
-	var req listTableParams
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
 		return
 	}
-
-	res, err := server.store.GetTablesWhereUser(ctx, req.User)
+	res, err := server.store.GetTablesWhereUser(ctx, int64(UserID))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -57,7 +62,6 @@ func (server *HttpServer) listTables(ctx *gin.Context) {
 }
 
 type getTableParams struct {
-	User  int32  `uri:"user" binding:"required,numeric,min=1"`
 	Table string `uri:"table" binding:"required,gte=3"`
 }
 
@@ -67,7 +71,13 @@ func (server *HttpServer) getTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	res, err := server.store.GetTableWhereName(ctx, req.Table)
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+	res, err := server.store.GetTableWhereNameAndUser(ctx, repo.GetTableWhereNameAndUserParams{Name: req.Table, UserID: int64(UserID)})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -84,7 +94,6 @@ func (server *HttpServer) getTable(ctx *gin.Context) {
 
 type deleteTableRequest struct {
 	Table string `uri:"table" binding:"required,gte=3,lte=50"`
-	User  int64  `uri:"user" binding:"required,numeric,min=1"`
 }
 
 func (server *HttpServer) deleteTable(ctx *gin.Context) {
@@ -93,7 +102,13 @@ func (server *HttpServer) deleteTable(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err := server.store.DropTableTx(ctx, repo.DeleteTableWhereUserAndNameParams{UserID: req.User, Name: req.Table})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+	err = server.store.DropTableTx(ctx, repo.DeleteTableWhereUserAndNameParams{Name: req.Table, UserID: int64(UserID)})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -108,7 +123,6 @@ type insertRowsRequest struct {
 }
 type insertRowsRequestUri struct {
 	Table string `uri:"table" binding:"required,alphanum,gte=1,lte=50"`
-	User  int32  `uri:"user" binding:"required,numeric,min=1"`
 }
 
 func (server *HttpServer) insertRows(ctx *gin.Context) {
@@ -123,7 +137,13 @@ func (server *HttpServer) insertRows(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-	err := server.store.InsertRows(ctx, repo.InsertRowsParams{Uid: uri.User, Tablename: uri.Table, Rows: req.Rows})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+	err = server.store.InsertRows(ctx, repo.InsertRowsParams{UserID: int64(UserID), Table: uri.Table, Rows: req.Rows})
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -139,7 +159,6 @@ type addColumnsParams struct {
 
 type addColumnsUri struct {
 	Table string `uri:"table" binding:"required,gte=3,lte=50"`
-	User  int64  `uri:"user" binding:"required,numeric,min=1"`
 }
 
 func (server *HttpServer) addColumns(ctx *gin.Context) {
@@ -155,8 +174,15 @@ func (server *HttpServer) addColumns(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+
 	updatedTable, err := server.store.AddColumnTx(ctx,
-		repo.AddColumnsTxParams{UserID: uri.User, Table: uri.Table, Columns: req.Columns})
+		repo.AddColumnsTxParams{UserID: int64(UserID), Table: uri.Table, Columns: req.Columns})
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -172,7 +198,6 @@ type dropColumnsParams struct {
 
 type dropColumnsUri struct {
 	Table string `uri:"table" binding:"required,gte=3,lte=50"`
-	User  int64  `uri:"user" binding:"required,numeric,min=1"`
 }
 
 func (server *HttpServer) deleteColumns(ctx *gin.Context) {
@@ -187,8 +212,13 @@ func (server *HttpServer) deleteColumns(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
-
-	updatedTable, err := server.store.DropColumnTx(ctx, repo.DropColumnsTxParams{UserID: uri.User, Table: uri.Table, Columns: req.Columns})
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
+	updatedTable, err := server.store.DropColumnTx(ctx, repo.DropColumnsTxParams{UserID: int64(UserID), Table: uri.Table, Columns: req.Columns})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -199,8 +229,7 @@ func (server *HttpServer) deleteColumns(ctx *gin.Context) {
 
 // -----------------------------------------------------------------------------------------------------
 type deleteRowsUriParams struct {
-	Table  string `uri:"table" validate:"required,alphanum,min=1"`
-	UserID int64  `uri:"user" validate:"required,numeric,min=1"`
+	Table string `uri:"table" validate:"required,alphanum,min=1"`
 }
 
 // valid body example: { "rows": { "id": [ 1, 2, 3 ], "name": [ "user1" ] } }
@@ -220,8 +249,14 @@ func (server *HttpServer) deleteRows(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
 
-	err := server.store.DeleteRows(ctx, repo.DeleteRowsParams{Table: uri.Table, UserID: uri.UserID, Rows: req.Rows})
+	err = server.store.DeleteRows(ctx, repo.DeleteRowsParams{Table: uri.Table, UserID: int64(UserID), Rows: req.Rows})
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -234,7 +269,6 @@ func (server *HttpServer) deleteRows(ctx *gin.Context) {
 // -----------------------------------------------------------------------------------------------------
 
 type getRowsParams struct {
-	User  int32  `uri:"user" binding:"required,numeric,min=1"`
 	Table string `uri:"table" binding:"required,gte=3,lte=50"`
 }
 
@@ -250,10 +284,16 @@ func (server *HttpServer) getRows(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "you do not have access to this table"})
+		return
+	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		if err.Error() == "EOF" {
 			// IF the Body is empty we will send all records
-			result, err := server.store.GetRows(ctx, repo.GetRowsParams{Uid: uri.User, Tablename: uri.Table})
+			result, err := server.store.GetRows(ctx, repo.GetRowsParams{UserID: int64(UserID), Table: uri.Table})
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 				return
@@ -266,7 +306,7 @@ func (server *HttpServer) getRows(ctx *gin.Context) {
 	}
 
 	// If Body is not empty
-	result, err := server.store.GetRow(ctx, repo.GetRowParams{Uid: uri.User, Table: uri.Table, Fields: req.Fields, Filters: req.Filters})
+	result, err := server.store.GetRow(ctx, repo.GetRowParams{UserID: int64(UserID), Table: uri.Table, Fields: req.Fields, Filters: req.Filters})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return

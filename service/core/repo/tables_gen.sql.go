@@ -184,55 +184,19 @@ func (q *Queries) GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesW
 	return items, nil
 }
 
-const getTable = `-- name: GetTable :one
+const getTableWhereNameAndUser = `-- name: GetTableWhereNameAndUser :one
 
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE id = $1 LIMIT 1
+SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE name = $1 AND user_id = $2 LIMIT 1
 `
+
+type GetTableWhereNameAndUserParams struct {
+	Name   string `json:"name"`
+	UserID int64  `json:"user_id"`
+}
 
 // -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-func (q *Queries) GetTable(ctx context.Context, id int64) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getTable, id)
-	var i CoreTable
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Name,
-		&i.Columns,
-		&i.Created,
-		&i.Updated,
-	)
-	return i, err
-}
-
-const getTableWhereIDAndUser = `-- name: GetTableWhereIDAndUser :one
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE id = $1 AND user_id = $2 LIMIT 1
-`
-
-type GetTableWhereIDAndUserParams struct {
-	ID     int64 `json:"id"`
-	UserID int64 `json:"user_id"`
-}
-
-func (q *Queries) GetTableWhereIDAndUser(ctx context.Context, arg GetTableWhereIDAndUserParams) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getTableWhereIDAndUser, arg.ID, arg.UserID)
-	var i CoreTable
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Name,
-		&i.Columns,
-		&i.Created,
-		&i.Updated,
-	)
-	return i, err
-}
-
-const getTableWhereName = `-- name: GetTableWhereName :one
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE name = $1 LIMIT 1
-`
-
-func (q *Queries) GetTableWhereName(ctx context.Context, name string) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getTableWhereName, name)
+func (q *Queries) GetTableWhereNameAndUser(ctx context.Context, arg GetTableWhereNameAndUserParams) (CoreTable, error) {
+	row := q.db.QueryRowContext(ctx, getTableWhereNameAndUser, arg.Name, arg.UserID)
 	var i CoreTable
 	err := row.Scan(
 		&i.ID,
