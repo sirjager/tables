@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -33,6 +34,6 @@ func LoadConfig(envpath string) (config ServerConfig, err error) {
 	}
 
 	err = viper.Unmarshal(&config)
-
+	println(fmt.Sprintf("sauce : %v", config.DBSource))
 	return
 }
