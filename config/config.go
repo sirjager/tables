@@ -22,7 +22,10 @@ func LoadConfig(envpath string) (config ServerConfig, err error) {
 	viper.SetConfigName("local")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
-	viper.ReadInConfig()
+	err = viper.ReadInConfig()
+	if err != nil {
+		return
+	}
 	err = viper.Unmarshal(&config)
 	return
 }
