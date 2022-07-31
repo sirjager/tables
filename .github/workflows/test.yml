@@ -1,7 +1,7 @@
 name: Test
 on:
   push:
-    branches: [ master, ft/security ]
+    branches: [ master ]
 
 jobs:
   test:
