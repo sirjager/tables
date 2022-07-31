@@ -234,7 +234,7 @@ type deleteRowsUriParams struct {
 
 // valid body example: { "rows": { "id": [ 1, 2, 3 ], "name": [ "user1" ] } }
 type deleteRowParams struct {
-	Rows map[string][]interface{} `json:"rows" validate:"required,gte=1"`
+	Filters map[string][]interface{} `json:"filters" validate:"required,gte=1"`
 }
 
 func (server *HttpServer) deleteRows(ctx *gin.Context) {
@@ -256,7 +256,7 @@ func (server *HttpServer) deleteRows(ctx *gin.Context) {
 		return
 	}
 
-	err = server.store.DeleteRows(ctx, repo.DeleteRowsParams{Table: uri.Table, UserID: int64(UserID), Rows: req.Rows})
+	err = server.store.DeleteRows(ctx, repo.DeleteRowsParams{Table: uri.Table, UserID: int64(UserID), Filters: req.Filters})
 
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})

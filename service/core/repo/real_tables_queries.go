@@ -546,9 +546,9 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 }
 
 type DeleteRowsParams struct {
-	Table  string                   `json:"table" validate:"required,alphanum,min=1"`
-	UserID int64                    `json:"useer" validate:"required,numeric,min=1"`
-	Rows   map[string][]interface{} `json:"rows" validate:"required,gte=1"`
+	Table   string                   `json:"table" validate:"required,alphanum,min=1"`
+	UserID  int64                    `json:"user_id" validate:"required,numeric,min=1"`
+	Filters map[string][]interface{} `json:"filters" validate:"required,gte=1"`
 }
 
 func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
@@ -571,11 +571,11 @@ func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) error {
 	}
 
 	// This will extract all the keys (all column names)
-	columns := make([]string, len(arg.Rows))
+	columns := make([]string, len(arg.Filters))
 	//DELETE FROM links WHERE id IN (6,5) RETURNING *;
 	i := 0
 	mainExecuteString := ""
-	for col, v := range arg.Rows {
+	for col, v := range arg.Filters {
 		// We got the column name now we need to know what data type the column is
 		colType := ""
 		columnExists := false
