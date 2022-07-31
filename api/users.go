@@ -131,7 +131,6 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	password := Password{Password: decodedPass}
 	err = validate.Struct(password)
 	if err != nil {
-		println()
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -209,12 +208,12 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 }
 
 // ------------------------------------------------------------------------------------------------------------
-type UriParamsUser struct {
+type getUserUriParams struct {
 	User int64 `uri:"user" binding:"required,numeric,min=1"`
 }
 
 func (server *HttpServer) getUser(ctx *gin.Context) {
-	var req UriParamsUser
+	var req getUserUriParams
 	var err error
 	if err = ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -231,7 +230,6 @@ func (server *HttpServer) getUser(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, removePassword(dbuser))
-
 }
 
 // ------------------------------------------------------------------------------------------------------------

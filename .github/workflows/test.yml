@@ -1,7 +1,7 @@
 name: Test
 on:
   push:
-    branches: [ master ]
+    branches: [ master, ft/security ]
 
 jobs:
   test:
@@ -53,4 +53,4 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         TOKEN_SECRET_KEY: ${{ secrets.TOKEN_SECRET_KEY }}
         ACCESS_TOKEN_DURATION:  ${{ secrets.ACCESS_TOKEN_DURATION }}
-        REFRESH_TOKEN_DURATION: ${{ secrets.REFRESH_TOKEN_DURATION }}
+        MIGRATION_URL: ${{ secrets.MIGRATION_URL }}
