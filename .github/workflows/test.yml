@@ -39,7 +39,9 @@ jobs:
         sudo mv migrate /usr/bin/
         which migrate
 
-
+    - name: Run migrations
+      run:  migrate -path migrations -database ${{ secrets.DATABASE_URL }} -verbose up
+      
     - name: Resolve dependencies
       run: go mod tidy
 
