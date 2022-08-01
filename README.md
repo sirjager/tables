@@ -948,46 +948,100 @@ Authorization: Bearer {access_token}
 
 ### Custom Filters
 1. To Query/Fetch speicific row you must apply filters
-```json
-{
-  "filters":{
-    "columnname": ["value to match"] // this will always be a list.
-  }
-}
-```
-## This is equivalent to :
-`SELECT * FROM tablename  WHERE columnname in ('value to match')`
-### Data type is checked background
 
-example : 
 ```json
 {
   "filters":{
-    "author":["techschool"] // this will always be a list.
+    // values will always be in a list
+    "columnName": [values...],
   }
 }
 ```
 
+```json
+{
+  "filters":{
+    "anyTextColumn": ["value1 to match","value2 to match"],
+    // boolean column will always have one value / either true or false
+    "anyBooleanColumn": [false],
+    // 
+    "anyIntergerColumn": [123,42,4124],
 
-
-<table>
-  <tr >
-    <td>Request</td>
-    <td>Response</td>
-  </tr>
-  <tr>
-    <td>
-
-```http
-GET /tables/articles/rows HTTP/1.1
-Host: localhost:8080
-Authorization: Bearer {access_token}
+  }
+}
 ```
 
-  </td>
 
-  <td>
+## Example
+## 1. 
+### Request
+```json
+{
+  "filters":{
+    "author":["techschool"] // Can have multiple values
+  }
+}
+```
+This is equivalent to :
 
+`SELECT * FROM tablename  WHERE author in ('techschool')`
+
+### Response
+```json
+[
+    {
+        "author": "techschool",
+        "body": "Ultimate backend course",
+        "id": 1,
+        "title": "master backend"
+    }
+]
+```
+## 2. 
+### Request
+```json
+{
+  "filters":{
+    "id":[3,1] // Can have multiple values
+  }
+}
+```
+This is equivalent to :
+
+`SELECT * FROM tablename  WHERE id in (1)`
+
+### Response
+```json
+[
+    {
+        "author": "techschool",
+        "body": "Ultimate backend course",
+        "id": 1,
+        "title": "master backend"
+    },
+    {
+        "author": "john doe",
+        "body": "java",
+        "id": 3,
+        "title": "java"
+    }
+]
+```
+## 3. 
+### Request
+```json
+{
+  "filters":{
+    "id":[2],
+    "author":["techschool"]
+  }
+}
+```
+This is equivalent to :
+
+`SELECT * FROM tablename  WHERE id in (2) OR author in ('techschool')`
+
+### Response
 ```json
 [
     {
@@ -1001,18 +1055,109 @@ Authorization: Bearer {access_token}
         "body": "sql",
         "id": 2,
         "title": "Learn sql"
-    },
-    {
-        "author": "john doe",
-        "body": "java",
-        "id": 3,
-        "title": "java"
     }
 ]
 ```
-</td>
-</tr>
-</table>
+
+## 4. 
+### Request
+```json
+{
+  "filters":{
+    "author":["ellen"],
+    "&":{
+      "published":[true]
+    }
+  }
+}
+```
+This is equivalent to :
+
+`SELECT * FROM tablename  WHERE author in ('ellen') AND published = true;`
+
+### Response
+```json
+[
+    {
+        "author": "ellen",
+        "body": "nextjs article body",
+        "id": 5,
+        "published": true,
+        "title": "Learn Nextjs"
+    },
+    {
+        "author": "ellen",
+        "body": "react article body",
+        "id": 6,
+        "published": true,
+        "title": "Learn React"
+    }
+]
+```
+
+## 5. 
+### Request
+```json
+{
+  "fields":["title"],
+  "filters":{
+    "author":["ellen"],
+    "&":{
+      "published":[true]
+    }
+  }
+}
+```
+This is equivalent to :
+
+`SELECT title FROM tablename  WHERE author in ('ellen') AND published = true;`
+
+### Response
+```json
+[
+    {
+        "title": "Learn Nextjs"
+    },
+    {
+        "title": "Learn React"
+    }
+]
+```
 
 
+## 6. 
+### Request
+```json
+{
+    "fields": [
+        "title",
+        "published"
+    ],
+    "filters": {
+        "author": [
+            "ellen"
+        ],
+        "&": {
+            "published": [
+                false
+            ]
+        }
+    }
+}
+```
+This is equivalent to :
 
+`SELECT title FROM tablename  WHERE author in ('ellen') AND published = true;`
+
+### Response
+```json
+[
+    {
+        "published": false,
+        "title": "Learn javascript"
+    }
+]
+```
+
+
+ 
