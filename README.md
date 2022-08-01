@@ -7,7 +7,26 @@ Tables allows you to manage you database tables in a more easier way .
 
 - [@SirJager](https://www.github.com/SirJager)
 
-# Endpoint
+## 🚀 What Next
+
+- Update Rows
+- Make tests
+- Add, Remove Update Primary Keys
+- Add, Remove Update Foreign Keys
+- Build a front end
+- Join Operations (maybe)
+
+## Tech Stack
+
+**Language:** Go
+
+**Database:** Postgres
+
+**Web framework:** Gin
+
+**Authentication:** JWT, Paseto
+
+# Endpoints
 
 ## UnAuthenticated Endpoints
 
@@ -54,23 +73,6 @@ Tables allows you to manage you database tables in a more easier way .
 | Insert Rows   | Insert rows    | POST     | `/tables/{tablename}/rows`     |
 | Delete Rows   | Delete Rows    | DELETE   | `/tables/{tablename}/rows`     |
 | Update Row    | Update Rows    | PATCH    | `to be implemented`
-
-### 🚀 What Next
-
-- Make tests
-- Add, Remove Update Primary Keys
-- Update Rows
-- Build a front end
-
-## Tech Stack
-
-**Language:** Go
-
-**Database:** Postgres
-
-**Web framework:** Gin
-
-**Authentication:** JWT, Paseto
 
 ## Examples in  HTTP/1.1
 
