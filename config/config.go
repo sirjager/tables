@@ -23,18 +23,6 @@ func LoadConfig(envpath string) (config ServerConfig, err error) {
 	viper.AutomaticEnv()
 	err = viper.ReadInConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			config = ServerConfig{
-				Port:                 viper.GetString("PORT"),
-				GinMode:              viper.GetString("GIN_MODE"),
-				DBSource:             viper.GetString("DATABASE_URL"),
-				MigrationURL:         viper.GetString("MIGRATION_URL"),
-				TokenSecretKey:       viper.GetString("TOKEN_SECRET_KEY"),
-				AccessTokenDuration:  viper.GetDuration("ACCESS_TOKEN_DURATION"),
-				RefreshTokenDuration: viper.GetDuration("REFRESH_TOKEN_DURATION"),
-			}
-			return
-		}
 		return
 	}
 	err = viper.Unmarshal(&config)
