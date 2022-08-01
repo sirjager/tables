@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"strings"
 
@@ -17,8 +16,6 @@ import (
 
 func main() {
 	c, err := config.LoadConfig(".")
-
-	println(fmt.Sprintf("%v", c)) // trying to see from where env is loading
 
 	if err != nil {
 		log.Fatal("Could not load server conifg :", err)
