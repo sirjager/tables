@@ -47,5 +47,5 @@ func runDBMigration(migrationURL string, dbSource string) {
 		log.Fatal("Failed to migrate database to latest version:", err)
 	}
 
-	log.Println("Database migration was successful")
+	log.Println("Database migration was successful ")
 }
