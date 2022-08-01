@@ -5,6 +5,8 @@
 
 !remote.env
 
+.vscode
+
 logs
 local
 
@@ -16,5 +18,3 @@ build
 **.temp/**
 
 Makefile
-
-

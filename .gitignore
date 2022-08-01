@@ -5,6 +5,8 @@
 
 !remote.env
 
+.vscode
+
 logs
 local
 
