@@ -15,23 +15,23 @@ import (
 )
 
 func main() {
-	c, err := config.LoadConfig(".")
+	cfg, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatal("Could not load server conifg :", err)
 	}
-	conn, conn_err := sql.Open(strings.Split(c.DBSource, ":")[0], c.DBSource)
+	conn, conn_err := sql.Open(strings.Split(cfg.DBSource, ":")[0], cfg.DBSource)
 
 	if conn_err != nil {
 		panic(conn_err)
 	}
-	runDBMigration(c.MigrationURL, c.DBSource)
+	runDBMigration(cfg.MigrationURL, cfg.DBSource)
 
 	store := repo.NewStore(conn)
-	httpServer, err := api.NewHttpServer(store, conn, c)
+	httpServer, err := api.NewHttpServer(store, conn, cfg)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
-	err = httpServer.Start(":" + c.Port)
+	err = httpServer.Start(":" + cfg.Port)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
