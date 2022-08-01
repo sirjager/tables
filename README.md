@@ -36,15 +36,6 @@ Tables allows you to manage you database tables in a more easier way .
 | Table Schema  | Table columns  | GET      | `/tables/{tablename}`    |
 | Remove Table  | Delete my table| DELETE   | `/tables/{tablename}`    |
 
-### Tables Routes
-
-| Title         | Descrption     | Method   |  Endpoint                |
-|---------------|----------------|----------|--------------------------|
-| Create Table  | Create   Table | POST     | `/tables`                |
-| List My Tables| Tables by me   | GET      | `/tables`                |
-| Table Schema  | Table columns  | GET      | `/tables/{tablename}`    |
-| Remove Table  | Delete my table| DELETE   | `/tables/{tablename}`    |
-
 ### Manage Columns Routes
 
 | Title              | Descrption          | Method   |  Endpoint                         |
@@ -84,6 +75,7 @@ Tables allows you to manage you database tables in a more easier way .
 ## Examples in  HTTP/1.1
 
 ## 1. Create User  `/users/signup`
+
 <table>
   <tr >
     <td>Request</td>
@@ -123,12 +115,13 @@ Content-Length: 108
   "created": "2022-08-01 08:03:12.416867 +0530 IST"
 }
 ```
+
 </td>
 </tr>
 </table>
 
-
 ## 2. Create User  `/users/signin`
+
 <table>
   <tr >
     <td>Request</td>
@@ -142,6 +135,7 @@ POST /users/signin HTTP/1.1
 Host: localhost:8080
 Authorization: Basic dXNlcjE6cGFzc3dvcmQ=
 ```
+
   </td>
   <td>
 
@@ -165,13 +159,13 @@ Authorization: Basic dXNlcjE6cGFzc3dvcmQ=
     }
 }
 ```
+
 </td>
 </tr>
 </table>
- 
-
 
 ## 3. Renew Access Token  `/users/renew-access`
+
 <table>
   <tr >
     <td>Request</td>
@@ -196,12 +190,13 @@ RefreshToken: {refresh_token}
     "access_token_expires_at": "2033-12-27T23:48:20.095529481+05:30"
 }
 ```
+
 </td>
 </tr>
 </table>
 
-
 ## 4. Get Users  `/users`
+
 <table>
   <tr >
     <td>Request</td>
@@ -235,11 +230,13 @@ Authorization: Bearer {access_token}
     }
 ]
 ```
+
 </td>
 </tr>
 </table>
 
 ## 5. Get My Profile  `/users/me`
+
 <table>
   <tr >
     <td>Request</td>
@@ -271,11 +268,13 @@ Authorization: Bearer {access_token}
     "created": "2022-08-01 08:45:11.33764 +0530 IST"
 }
 ```
+
 </td>
 </tr>
 </table>
 
 ## 6. Delete My Profile  `/users/me`
+
 (currenlty having issues will be fixed very soon )
 <table>
   <tr >
@@ -310,18 +309,23 @@ Content-Length: 1
     "created": "2022-08-01 08:45:11.33764 +0530 IST"
 }
 ```
+
 </td>
 </tr>
 </table>
 
-
 ## 7. Create Table  `/tables`
+
 ### Column Type
+
 `
 integer,smallint,bigint,decimal,numeric,real,'double precision',smallserial,serial,bigserial,varchar,char,character,text,timestamp,'timestamp with time zone','timestamp without time zone' date,'time with time zone',time,'time without time zone',bool,boolean,bit,'bit varying',cidr, inet,macaddr,macaddr8,json,jsonb,money,uuid
 `
-### Column Fields 
+
+### Column Fields
+
 name:- any alpha numeric, be short and simple
+
 ```
 {
   "name": "name",
@@ -438,6 +442,7 @@ Content-Length: 388
     "updated": "2022-08-01T08:59:44.963863+05:30"
 }
 ```
+
 </td>
 </tr>
 </table>
@@ -467,11 +472,10 @@ Authorization: Bearer {access_token}
     "message": "Table 'articles' deleted"
 }
 ```
+
 </td>
 </tr>
 </table>
-
-
 
 ## 9. List All My Tables
 
@@ -550,13 +554,10 @@ Authorization: Bearer {access_token}
     }
 ]
 ```
+
 </td>
 </tr>
 </table>
-
-
-
-
 
 ## 10. Get Table
 
@@ -633,14 +634,13 @@ Authorization: Bearer {access_token}
         "updated": "2022-08-01T09:19:02.488179+05:30"
     }
 ```
+
 </td>
 </tr>
 </table>
 
-
-
-
 ## 11. Add Column  `/tables/{tablename}/columns`
+
 <table>
   <tr >
     <td>Request</td>
@@ -735,12 +735,13 @@ Authorization: Bearer {access_token}
     "updated": "2022-08-01T08:59:44.963863+05:30"
 }
 ```
+
 </td>
 </tr>
 </table>
 
-
 ## 12. Drop Column  `/tables/{tablename}/columns`
+
 <table>
   <tr >
     <td>Request</td>
@@ -822,16 +823,15 @@ Content-Length: 44
     "updated": "2022-08-01T08:59:44.963863+05:30"
 }
 ```
+
 </td>
 </tr>
 </table>
 
-
-
-
 ## 13. Insert Rows In Table  `/tables/{tablename}/rows`
 
 ### Single Row Example
+
 ```
   [
     {"k":"title", "v" : "Learn Coding"}
@@ -839,6 +839,7 @@ Content-Length: 44
     {"k":"body", "v" : "article body"}
   ]
 ```
+
 1. k = column
 2. V = value of row for that specific column
 3. if the column has required = false that can be skipped
@@ -886,12 +887,10 @@ Content-Length: 369
     "message": "3 rows inserted in articles"
 }
 ```
+
 </td>
 </tr>
 </table>
-
-
-
 
 ## 13. Get Rows from Table  `/tables/{tablename}/rows`
 
@@ -935,18 +934,17 @@ Authorization: Bearer {access_token}
     }
 ]
 ```
+
 </td>
 </tr>
 </table>
 
-
-
-
-
 ## 14. Get Rows from Table  `/tables/{tablename}/rows`
+
 ### Same as above(13). But Extended
 
 ### Custom Filters
+
 1. To Query/Fetch speicific row you must apply filters
 
 ```json
@@ -971,10 +969,12 @@ Authorization: Bearer {access_token}
 }
 ```
 
-
 ## Example
-## 1. 
+
+## 1
+
 ### Request
+
 ```json
 {
   "filters":{
@@ -982,11 +982,13 @@ Authorization: Bearer {access_token}
   }
 }
 ```
+
 This is equivalent to :
 
 `SELECT * FROM tablename  WHERE author in ('techschool')`
 
 ### Response
+
 ```json
 [
     {
@@ -997,8 +999,11 @@ This is equivalent to :
     }
 ]
 ```
-## 2. 
+
+## 2
+
 ### Request
+
 ```json
 {
   "filters":{
@@ -1006,11 +1011,13 @@ This is equivalent to :
   }
 }
 ```
+
 This is equivalent to :
 
 `SELECT * FROM tablename  WHERE id in (1)`
 
 ### Response
+
 ```json
 [
     {
@@ -1027,8 +1034,11 @@ This is equivalent to :
     }
 ]
 ```
-## 3. 
+
+## 3
+
 ### Request
+
 ```json
 {
   "filters":{
@@ -1037,11 +1047,13 @@ This is equivalent to :
   }
 }
 ```
+
 This is equivalent to :
 
 `SELECT * FROM tablename  WHERE id in (2) OR author in ('techschool')`
 
 ### Response
+
 ```json
 [
     {
@@ -1059,8 +1071,10 @@ This is equivalent to :
 ]
 ```
 
-## 4. 
+## 4
+
 ### Request
+
 ```json
 {
   "filters":{
@@ -1071,11 +1085,13 @@ This is equivalent to :
   }
 }
 ```
+
 This is equivalent to :
 
 `SELECT * FROM tablename  WHERE author in ('ellen') AND published = true;`
 
 ### Response
+
 ```json
 [
     {
@@ -1095,8 +1111,10 @@ This is equivalent to :
 ]
 ```
 
-## 5. 
+## 5
+
 ### Request
+
 ```json
 {
   "fields":["title"],
@@ -1108,11 +1126,13 @@ This is equivalent to :
   }
 }
 ```
+
 This is equivalent to :
 
 `SELECT title FROM tablename  WHERE author in ('ellen') AND published = true;`
 
 ### Response
+
 ```json
 [
     {
@@ -1124,9 +1144,10 @@ This is equivalent to :
 ]
 ```
 
+## 6
 
-## 6. 
 ### Request
+
 ```json
 {
     "fields": [
@@ -1145,11 +1166,13 @@ This is equivalent to :
     }
 }
 ```
+
 This is equivalent to :
 
 `SELECT title FROM tablename  WHERE author in ('ellen') AND published = true;`
 
 ### Response
+
 ```json
 [
     {
@@ -1158,6 +1181,3 @@ This is equivalent to :
     }
 ]
 ```
-
-
- 
