@@ -15,23 +15,23 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig(".")
+	c, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatal("Could not load server conifg :", err)
 	}
-	conn, conn_err := sql.Open(strings.Split(cfg.DBSource, ":")[0], cfg.DBSource)
+	conn, conn_err := sql.Open(strings.Split(c.DBSource, ":")[0], c.DBSource)
 
 	if conn_err != nil {
 		panic(conn_err)
 	}
-	runDBMigration(cfg.MigrationURL, cfg.DBSource)
+	runDBMigration(c.MigrationURL, c.DBSource)
 
 	store := repo.NewStore(conn)
-	httpServer, err := api.NewHttpServer(store, conn, cfg)
+	httpServer, err := api.NewHttpServer(store, conn, c)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
-	err = httpServer.Start(":" + cfg.Port)
+	err = httpServer.Start(":" + c.Port)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
@@ -47,5 +47,5 @@ func runDBMigration(migrationURL string, dbSource string) {
 		log.Fatal("Failed to migrate database to latest version:", err)
 	}
 
-	log.Println("Database migration was successful ")
+	log.Println("Database migration was successful")
 }
