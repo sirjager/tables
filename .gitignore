@@ -3,6 +3,8 @@
 **.env.**
 !example.env
 
+!remote.env
+
 .vscode
 
 logs

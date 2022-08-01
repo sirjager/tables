@@ -18,7 +18,7 @@ type ServerConfig struct {
 
 func LoadConfig(envpath string) (config ServerConfig, err error) {
 	viper.AddConfigPath(envpath)
-	viper.SetConfigName("app")
+	viper.SetConfigName("remote")
 	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 	err = viper.ReadInConfig()
