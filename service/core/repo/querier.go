@@ -11,44 +11,44 @@ import (
 )
 
 type Querier interface {
-	// -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
-	CreateSession(ctx context.Context, arg CreateSessionParams) (CoreSession, error)
-	// -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
-	CreateTable(ctx context.Context, arg CreateTableParams) (CoreTable, error)
-	// ------------------------------ ADD ONE CORE_USERS <-> CORE_USER  ------------------------------
-	CreateUser(ctx context.Context, arg CreateUserParams) (CoreUser, error)
-	// -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
-	DeleteTable(ctx context.Context, id int64) error
-	DeleteTableWhereUserAndName(ctx context.Context, arg DeleteTableWhereUserAndNameParams) error
+	// -------------------------- ADD ONE TO -> _SESSIONS --------------------------
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	// -------------------------- ADD _TABLES <-> _TABLES --------------------------
+	CreateTable(ctx context.Context, arg CreateTableParams) (Table, error)
+	// ------------------------------ ADD ONE _USERS <-> _USER  ------------------------------
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteTableWhereName(ctx context.Context, name string) error
+	// -------------------------- REMOVE _TABLES <-> _TABLES --------------------------
 	DeleteTablesWhereUser(ctx context.Context, userID int64) error
-	// ------------------------------ REMOVE ONE CORE_USERS -> nil  ------------------------------
+	// ------------------------------ REMOVE ONE _USERS -> nil  ------------------------------
 	DeleteUser(ctx context.Context, id int64) error
-	// ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
-	GetAllTables(ctx context.Context) ([]CoreTable, error)
-	// ------------------------------ GET MULTIPLE CORE_USERS <== [CORE_USERS] ------------------------------
-	GetAllUsers(ctx context.Context) ([]CoreUser, error)
-	// -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
-	GetSession(ctx context.Context, id uuid.UUID) (CoreSession, error)
-	GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([]CoreTable, error)
-	GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]CoreTable, error)
-	GetSomeUsers(ctx context.Context, arg GetSomeUsersParams) ([]CoreUser, error)
-	// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-	GetTableWhereNameAndUser(ctx context.Context, arg GetTableWhereNameAndUserParams) (CoreTable, error)
-	// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
-	GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreTable, error)
-	// ------------------------------ GET ONE CORE_USERS <== CORE_USER  ------------------------------
-	GetUser(ctx context.Context, id int64) (CoreUser, error)
-	GetUserWhereEmail(ctx context.Context, email string) (CoreUser, error)
-	GetUserWhereUsername(ctx context.Context, username string) (CoreUser, error)
-	// -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
-	UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (CoreTable, error)
-	UpdateUserBlocked(ctx context.Context, arg UpdateUserBlockedParams) (CoreUser, error)
-	// ------------------------------ UPDATE ONE CORE_USERS <-> CORE_USERS  ------------------------------
-	UpdateUserFullName(ctx context.Context, arg UpdateUserFullNameParams) (CoreUser, error)
-	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (CoreUser, error)
-	UpdateUserPublic(ctx context.Context, arg UpdateUserPublicParams) (CoreUser, error)
-	UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) (CoreUser, error)
-	UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (CoreUser, error)
+	// ------------------------------ GET MULTIPLE _TABLES <== [_TABLES] ------------------------------
+	GetAllTables(ctx context.Context) ([]Table, error)
+	// ------------------------------ GET MULTIPLE _USERS <== [_USERS] ------------------------------
+	GetAllUsers(ctx context.Context) ([]User, error)
+	// -------------------------- GET ONE FROM <- _SESSIONS --------------------------
+	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
+	GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([]Table, error)
+	GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]Table, error)
+	GetSomeUsers(ctx context.Context, arg GetSomeUsersParams) ([]User, error)
+	GetTableByUserIdAndTableName(ctx context.Context, arg GetTableByUserIdAndTableNameParams) (Table, error)
+	// -------------------------- GET ONE _TABLES <- _TABLES --------------------------
+	GetTableWhereName(ctx context.Context, name string) (Table, error)
+	// --------------------- GET MULTIPLE _TABLES OF _USERS.user_id <== [_TABLES] ---------------------
+	GetTablesWhereUser(ctx context.Context, userID int64) ([]Table, error)
+	// ------------------------------ GET ONE _USERS <== _USER  ------------------------------
+	GetUser(ctx context.Context, id int64) (User, error)
+	GetUserWhereEmail(ctx context.Context, email string) (User, error)
+	GetUserWhereUsername(ctx context.Context, username string) (User, error)
+	// -------------------------- UPDATE _TABLES <-> _TABLES --------------------------
+	UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (Table, error)
+	UpdateUserBlocked(ctx context.Context, arg UpdateUserBlockedParams) (User, error)
+	// ------------------------------ UPDATE ONE _USERS <-> _USERS  ------------------------------
+	UpdateUserFullName(ctx context.Context, arg UpdateUserFullNameParams) (User, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
+	UpdateUserPublic(ctx context.Context, arg UpdateUserPublicParams) (User, error)
+	UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) (User, error)
+	UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

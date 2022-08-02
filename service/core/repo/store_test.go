@@ -33,21 +33,19 @@ func TestCreateTableTx(t *testing.T) {
 			columns = append(columns, col)
 		}
 		arg := CreateTableTxParams{
-			Name:    utils.RandomString(8),
+			Table:   utils.RandomString(8),
 			UserID:  user.ID,
 			Columns: columns,
 		}
 		createdTable, err := store.CreateTableTx(context.Background(), arg)
 		require.NoError(t, err)
 		require.NotEmpty(t, createdTable)
-		require.Equal(t, arg.Name, createdTable.Name)
+		require.Equal(t, arg.Table, createdTable.Name)
 		require.Equal(t, arg.UserID, createdTable.UserID)
 		require.NotZero(t, createdTable.ID)
 
-		foundCreatedTable, err := store.GetTableWhereNameAndUser(context.Background(), GetTableWhereNameAndUserParams{
-			Name:   createdTable.Name,
-			UserID: createdTable.UserID,
-		})
+		foundCreatedTable, err := store.GetTableByUserIdAndTableName(context.Background(),
+			GetTableByUserIdAndTableNameParams{Name: createdTable.Name, UserID: createdTable.UserID})
 		require.NoError(t, err)
 		require.NotEmpty(t, foundCreatedTable)
 
@@ -55,7 +53,7 @@ func TestCreateTableTx(t *testing.T) {
 		require.Equal(t, createdTable.UserID, foundCreatedTable.UserID)
 		require.Equal(t, createdTable.UserID, arg.UserID)
 		require.Equal(t, createdTable.Name, foundCreatedTable.Name)
-		require.Equal(t, createdTable.Name, arg.Name)
+		require.Equal(t, createdTable.Name, arg.Table)
 	}
 
 }
@@ -84,14 +82,14 @@ func TestDropTableTx(t *testing.T) {
 			columns = append(columns, col)
 		}
 		arg := CreateTableTxParams{
-			Name:    utils.RandomString(8),
+			Table:   utils.RandomString(8),
 			UserID:  user.ID,
 			Columns: columns,
 		}
 		createdTable, err := store.CreateTableTx(context.Background(), arg)
 		require.NoError(t, err)
 		require.NotEmpty(t, createdTable)
-		require.Equal(t, arg.Name, createdTable.Name)
+		require.Equal(t, arg.Table, createdTable.Name)
 		require.Equal(t, arg.UserID, createdTable.UserID)
 		require.NotZero(t, createdTable.ID)
 		createdTableNames = append(createdTableNames, createdTable.Name)
@@ -99,7 +97,7 @@ func TestDropTableTx(t *testing.T) {
 
 	require.Equal(t, count, len(createdTableNames))
 	for _, name := range createdTableNames {
-		err := store.DropTableTx(context.Background(), DeleteTableWhereUserAndNameParams{UserID: user.ID, Name: name})
+		err := store.DropTableTx(context.Background(), Name{Value: name})
 		require.NoError(t, err)
 	}
 }

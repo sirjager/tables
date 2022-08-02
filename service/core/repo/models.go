@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type CoreSession struct {
+type Session struct {
 	// auto generated session id
 	ID uuid.UUID `json:"id"`
-	// required,numeric,shouldref=core_users.id
+	// required,numeric,shouldref=_users.id
 	UserID int64 `json:"user_id"`
 	// required,ipaddress
 	ClientIp string `json:"client_ip"`
@@ -29,10 +29,10 @@ type CoreSession struct {
 	Created time.Time `json:"created"`
 }
 
-type CoreTable struct {
+type Table struct {
 	// numeric,server-side auto generated id
 	ID int64 `json:"id"`
-	// required,numeric,shouldref=core_users.id
+	// required,numeric,shouldref=_users.id
 	UserID int64 `json:"user_id"`
 	// required,alphanumeric,unique,min=3
 	Name string `json:"name"`
@@ -42,7 +42,7 @@ type CoreTable struct {
 	Updated time.Time `json:"updated"`
 }
 
-type CoreUser struct {
+type User struct {
 	// server-side auto generated id
 	ID int64 `json:"id"`
 	// required,max=255
@@ -58,7 +58,8 @@ type CoreUser struct {
 	// optinal,default=false,desc=email is verified or not
 	Verified bool `json:"verified"`
 	// optinal,default=false,desc=profile is accessible or not
-	Blocked bool `json:"blocked"`
+	Blocked bool   `json:"blocked"`
+	Role    string `json:"role"`
 	// server-side auto generated timestamp with time zone
 	Updated time.Time `json:"updated"`
 	// server-side auto generated timestamp with time zone
