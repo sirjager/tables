@@ -6,31 +6,39 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/lib/pq"
 )
 
-type Column struct {
-	Name      string `json:"name" validate:"required,alphanum,gte=2,lte=30"`
-	Type      string `json:"type" validate:"required,oneof=integer smallint bigint decimal numeric real 'double precision' smallserial serial bigserial varchar char character text timestamp 'timestamp with time zone' 'timestamp without time zone' date 'time with time zone' time 'time without time zone' bool boolean bit 'bit varying' cidr inet macaddr macaddr8 json jsonb money uuid"`
-	Length    int64  `json:"length"`
-	Primary   bool   `json:"primary"`
-	Unique    bool   `json:"unique"`
-	Required  bool   `json:"required"`
-	Precision int32  `json:"precision"`
-	Scale     int32  `json:"scale"`
-	Default   string `json:"default"`
+func (t *Table) Schema() (TableSchema, error) {
+	var err error
+	var s TableSchema
+	var c []Column
+	err = json.Unmarshal([]byte(t.Columns), &c)
+	if err != nil {
+		return s, err
+	}
+	return TableSchema{ID: t.ID, UserID: t.UserID, Name: t.Name, Columns: c, Created: t.Created, Updated: t.Updated}, err
 }
 
-type TableSchema struct {
-	ID      int64     `json:"id" validate:"required,numeric"`
-	Name    string    `json:"name" validate:"required,alphanum,gte=3,lte=60"`
-	UserID  int64     `json:"user_id" validate:"required,numeric"`
-	Columns []Column  `json:"columns"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
+func (t *TableSchema) ColumnsThatDontExists(m []map[string]interface{}) []string {
+	invalidColumns := []string{}
+	for ri, r := range m {
+		for k := range r {
+			exists := false
+			for _, c := range t.Columns {
+				if c.Name == k {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				invalidColumns = append(invalidColumns, fmt.Sprintf("%v(row#%d)", k, ri+1))
+			}
+		}
+	}
+	return invalidColumns
 }
 
 func (s *TableSchema) RequiredColumns() []Column {
@@ -42,6 +50,8 @@ func (s *TableSchema) RequiredColumns() []Column {
 	}
 	return c
 }
+
+// Though there will only one
 func (s *TableSchema) PrimaryColumn() Column {
 	var c Column
 	for _, f := range s.Columns {
@@ -242,6 +252,8 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 	// Process columns
 	//  1. validate column : types, name
 	// 2. generate column string:  NAME VARCHAR(50) NOT NULL
+	// 3. We will make sure that user gives one primary column
+	primaryColumns := []string{}
 	for i, col := range arg.Columns {
 		column_string, err := getColumnString(col)
 		if err != nil {
@@ -254,6 +266,15 @@ func (store *SQLStore) CreateTableTx(ctx context.Context, arg CreateTableTxParam
 			// If not a last column add comma (,)
 			all_columns_string = all_columns_string + column_string + ", "
 		}
+		if col.Primary {
+			primaryColumns = append(primaryColumns, col.Name)
+		}
+	}
+	if len(primaryColumns) == 0 {
+		return result, fmt.Errorf("table must contain one primary column")
+	}
+	if len(primaryColumns) > 1 {
+		return result, fmt.Errorf("table can not have multiple primary columns, you have %s as primary columns", primaryColumns)
 	}
 	// Build columns json string
 	columnsString, err := ColumnsToJsonString(arg.Columns)

@@ -3,7 +3,6 @@ package core_repo
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -18,7 +17,38 @@ type Row struct {
 	Value map[string]interface{} `json:"row"`
 }
 
-func (s *TableSchema) InsertRowString(row Row, index int) (string, error) {
+// This is where magic happens
+func sqlRowsToJson(r *sql.Rows, k []string) ([]any, error) {
+	var rs []any = []any{}
+	for r.Next() {
+		// Create a slice of interface{}'s to represent each column,
+		// and a second slice to contain pointers to each item in the columns slice.
+		c := make([]interface{}, len(k))
+		ptr := make([]interface{}, len(k))
+		for i := range c {
+			ptr[i] = &c[i]
+		}
+		// Scan the result into the column pointers...
+		if err := r.Scan(ptr...); err != nil {
+			return nil, err
+		}
+		// Create our map, and retrieve the value for each column from the pointers slice,
+		// storing it in the map with the name of the column as the key.
+		m := make(map[string]interface{})
+		for i, cn := range k {
+			val := ptr[i].(*interface{})
+			m[cn] = *val
+		}
+		f := make(map[string]interface{})
+		for k, v := range m {
+			f[k] = v
+		}
+		rs = append(rs, f)
+	}
+	return rs, nil
+}
+
+func (s *TableSchema) insertRowString(row Row, index int) (string, error) {
 	columns := ""
 	values := ""
 	i := 0
@@ -87,40 +117,85 @@ func (s *TableSchema) InsertRowString(row Row, index int) (string, error) {
 	return fmt.Sprintf(`INSERT INTO "public"."%v" (%v) VALUES (%v);`, s.Name, columns, values), err
 }
 
+func (s *TableSchema) updateRowString(row Row, primaryColumn Column, index int) (string, error) {
+	var err error
+	//END goal to make like this:
+	// title = 'First Title', author = 'First Author' WHERE id = 1;
+	query := ""
+	// We dont want to update primary column value so we will remove it
+
+	rowIndex := row.Value[primaryColumn.Name]
+	if rowIndex == nil {
+		return query, fmt.Errorf("which row to update ?. provide a primary column and  value in row [%d]", index+1)
+	}
+	println(fmt.Sprintf("Update row #%v", rowIndex))
+	i := 0
+	for k, v := range row.Value {
+		isLast := i == len(row.Value)-1
+		for _, c := range s.Columns {
+			if k == c.Name && k != primaryColumn.Name {
+				query += c.Name + " = "
+				if c.Type == "varchar" || c.Type == "text" {
+					if c.Type == "varchar" {
+						if c.Length > 0 {
+							if v != nil && len(fmt.Sprintf("%v", v)) > int(c.Length) {
+								return "", fmt.Errorf("row [%d] column [%v] can not have characters more than [%d]",
+									index+1, k, c.Length)
+							}
+						}
+					}
+					if isLast {
+						query += fmt.Sprintf("'%v'", v)
+					} else {
+						query += fmt.Sprintf("'%v',", v)
+					}
+				} else if c.Type == "boolean" {
+					bv, isb := v.(bool)
+					if !isb { // if it is not boolean then we will check whether if it is valid in string or not
+						if strings.ToLower(fmt.Sprintf("%v", v)) == "true" || strings.ToLower(fmt.Sprintf("%v", v)) == "false" {
+							if isLast {
+								query += fmt.Sprintf("%v", v)
+							} else {
+								query += fmt.Sprintf("%v,", v)
+							}
+						} else {
+							return "", fmt.Errorf("invalid value [%v] for boolean type column [%s]", v, c.Name)
+						}
+					} else {
+						if isLast {
+							query += fmt.Sprintf("%v", bv)
+						} else {
+							query += fmt.Sprintf("%v,", bv)
+						}
+					}
+				} else {
+					//! For any other type of column we will just add value
+					if isLast {
+						query += fmt.Sprintf("%v", v)
+					} else {
+						query += fmt.Sprintf("%v,", v)
+					}
+				}
+				break
+			}
+		}
+		i++
+	}
+	if query == "" {
+		return "", fmt.Errorf("empty row provided")
+	}
+	if primaryColumn.Type == "text" || primaryColumn.Type == "varchar" {
+		query += fmt.Sprintf(" WHERE %v = '%v'", primaryColumn.Name, rowIndex)
+	} else {
+		query += fmt.Sprintf(" WHERE %v = %v", primaryColumn.Name, rowIndex)
+	}
+	return fmt.Sprintf(`UPDATE "public"."%v" SET %v;`, s.Name, query), err
+}
+
 type InsertRowsParams struct {
 	Table  string                   `json:"table" validate:"required,alphanum,gte=3,lte=60"`
 	UserID int64                    `json:"user_id" validate:"required,numeric,min=1"`
 	Rows   []map[string]interface{} `json:"rows" validate:"required"`
-}
-
-func (t *Table) Schema() (TableSchema, error) {
-	var err error
-	var s TableSchema
-	var c []Column
-	err = json.Unmarshal([]byte(t.Columns), &c)
-	if err != nil {
-		return s, err
-	}
-	return TableSchema{ID: t.ID, UserID: t.UserID, Name: t.Name, Columns: c, Created: t.Created, Updated: t.Updated}, err
-}
-
-func (t *TableSchema) ColumnsThatDontExists(m []map[string]interface{}) []string {
-	invalidColumns := []string{}
-	for ri, r := range m {
-		for k := range r {
-			exists := false
-			for _, c := range t.Columns {
-				if c.Name == k {
-					exists = true
-					break
-				}
-			}
-			if !exists {
-				invalidColumns = append(invalidColumns, fmt.Sprintf("%v(row#%d)", k, ri+1))
-			}
-		}
-	}
-	return invalidColumns
 }
 
 func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) error {
@@ -149,22 +224,19 @@ func (store *SQLStore) InsertRows(ctx context.Context, arg InsertRowsParams) err
 	if len(colsThatDontExist) != 0 {
 		return fmt.Errorf("columns %v dosen't exists", colsThatDontExist)
 	}
-	// var insertStrings []string
+	var insertStrings []string
 	for i, r := range arg.Rows {
 		row := Row{Value: r}
-		istr, err := schema.InsertRowString(row, i)
+		istr, err := schema.insertRowString(row, i)
 		if err != nil {
 			return err
 		}
-		println(istr)
-		// insertStrings = append(insertStrings, istr)
+		insertStrings = append(insertStrings, istr)
 	}
 	// to use and read colums properly we need to format table columns
-
-	// insertStatement := strings.Join(insertStrings, "\n")
+	insertStatement := strings.Join(insertStrings, "\n")
 	// If insert strings are safely build without erros then execute statements
-	// we dont wanna send back same data which user just inserted
-	// _, err = store.db.ExecContext(ctx, insertStatement)
+	_, err = store.db.ExecContext(ctx, insertStatement)
 	return err
 }
 
@@ -809,33 +881,53 @@ func (q *Queries) DeleteRows(ctx context.Context, arg DeleteRowsParams) ([]any, 
 	return results, err
 }
 
-// This is where magic happens
-func sqlRowsToJson(r *sql.Rows, k []string) ([]any, error) {
-	var rs []any = []any{}
-	for r.Next() {
-		// Create a slice of interface{}'s to represent each column,
-		// and a second slice to contain pointers to each item in the columns slice.
-		c := make([]interface{}, len(k))
-		ptr := make([]interface{}, len(k))
-		for i := range c {
-			ptr[i] = &c[i]
-		}
-		// Scan the result into the column pointers...
-		if err := r.Scan(ptr...); err != nil {
-			return nil, err
-		}
-		// Create our map, and retrieve the value for each column from the pointers slice,
-		// storing it in the map with the name of the column as the key.
-		m := make(map[string]interface{})
-		for i, cn := range k {
-			val := ptr[i].(*interface{})
-			m[cn] = *val
-		}
-		f := make(map[string]interface{})
-		for k, v := range m {
-			f[k] = v
-		}
-		rs = append(rs, f)
+type UpdateRowsParams struct {
+	Table  string                   `json:"table" validate:"required,alphanum,gte=3,lte=60"`
+	UserID int64                    `json:"user_id" validate:"required,numeric,min=1"`
+	Rows   []map[string]interface{} `json:"rows" validate:"required"`
+}
+
+func (store *SQLStore) UpdateRows(ctx context.Context, arg UpdateRowsParams) error {
+	validate := validator.New()
+	err := validate.Struct(arg)
+	if err != nil {
+		return err
 	}
-	return rs, nil
+
+	// First we will validate so that we dont make interactions in database with invalid data
+	// Requirements: Table Schema
+	dbtable, err := store.GetTableByUserIdAndTableName(ctx, GetTableByUserIdAndTableNameParams{Name: arg.Table, UserID: arg.UserID})
+	// If schema is not found then probably table does not exits or does not belongs to user
+	// In both cases we will send table not found.
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf(TABLE_NOT_FOUND)
+		}
+		return err
+	}
+	schema, err := dbtable.Schema()
+	if err != nil {
+		return err
+	}
+	colsThatDontExist := schema.ColumnsThatDontExists(arg.Rows)
+	if len(colsThatDontExist) != 0 {
+		return fmt.Errorf("columns %v dosen't exists", colsThatDontExist)
+	}
+	var updateStrings []string
+
+	primaryColumn := schema.PrimaryColumn()
+
+	for i, r := range arg.Rows {
+		row := Row{Value: r}
+		istr, err := schema.updateRowString(row, primaryColumn, i)
+		if err != nil {
+			return err
+		}
+		updateStrings = append(updateStrings, istr)
+	}
+	// to use and read colums properly we need to format table columns
+	updateString := strings.Join(updateStrings, "\n")
+	// If insert strings are safely build without erros then execute statements
+	_, err = store.db.ExecContext(ctx, updateString)
+	return err
 }

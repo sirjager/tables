@@ -91,6 +91,7 @@ func (server *HttpServer) setupHttpRouter() {
 	// Manage Rows
 	authenticatedRoute.GET("/tables/:table/rows", server.getRows)
 	authenticatedRoute.POST("/tables/:table/rows", server.insertRows)
+	authenticatedRoute.PATCH("/tables/:table/rows", server.updateRows)
 	authenticatedRoute.DELETE("/tables/:table/rows", server.deleteRows)
 
 	server.router = router

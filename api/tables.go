@@ -171,6 +171,41 @@ func (server *HttpServer) insertRows(ctx *gin.Context) {
 }
 
 // -----------------------------------------------------------------------------------------------------
+type updateRowsRequest struct {
+	Rows []map[string]interface{} `json:"rows" binding:"required"`
+}
+type updateRowsRequestUri struct {
+	Table string `uri:"table" binding:"required,alphanum,gte=3,lte=60"`
+}
+
+func (server *HttpServer) updateRows(ctx *gin.Context) {
+	var req updateRowsRequest
+	var uri updateRowsRequestUri
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	println(fmt.Sprintf("%v", req))
+	authPayload := ctx.MustGet(middlewares.AuthorizationPayloadKey).(*tokens.Payload)
+	UserID, err := strconv.Atoi(authPayload.User)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: NO_ACCESS_TO_RESOURCE})
+		return
+	}
+	// If table belongs to user or not is checked inside insert rows func
+	err = server.store.UpdateRows(ctx, repo.UpdateRowsParams{UserID: int64(UserID), Table: uri.Table, Rows: req.Rows})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, MessageResponse{Message: fmt.Sprintf("%d rows updated in %s", len(req.Rows), uri.Table)})
+}
+
+// -----------------------------------------------------------------------------------------------------
 type addColumnsParams struct {
 	Columns []repo.Column `json:"columns" binding:"required"`
 }
