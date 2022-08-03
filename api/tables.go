@@ -296,6 +296,10 @@ func (server *HttpServer) deleteRows(ctx *gin.Context) {
 		return
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		if err.Error() == "EOF" {
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "no filters provided"})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
