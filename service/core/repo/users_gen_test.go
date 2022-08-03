@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomUser(t *testing.T) CoreUser {
+func createRandomUser(t *testing.T) User {
 	arg := CreateUserParams{
 		Email:    utils.RandomEmail(),
 		Username: utils.RandomUserName(),
@@ -103,7 +103,7 @@ func TestGetUserWhereUsername(t *testing.T) {
 }
 
 func TestGetAllUsers(t *testing.T) {
-	var createUsers []CoreUser
+	var createUsers []User
 	const totalUsers = 10
 	for i := 0; i < totalUsers; i++ {
 		user := createRandomUser(t)

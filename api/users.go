@@ -19,11 +19,16 @@ import (
 	"github.com/lib/pq"
 )
 
+const (
+	INVALID_CREDENTAILS = "invalid credentials"
+)
+
 type userAsResponse struct {
 	ID       int64  `json:"id"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Fullname string `json:"fullname"`
+	Role     string `json:"role"`
 	Public   bool   `json:"public"`
 	Blocked  bool   `json:"blocked"`
 	Verified bool   `json:"verified"`
@@ -32,12 +37,13 @@ type userAsResponse struct {
 }
 
 // ------------------------------------------------------------------------------------------------------------
-func removePassword(user repo.CoreUser) userAsResponse {
+func removePassword(user repo.User) userAsResponse {
 	return userAsResponse{
 		ID:       user.ID,
 		Email:    user.Email,
 		Username: user.Username,
 		Fullname: user.Fullname,
+		Role:     user.Role,
 		Public:   user.Public,
 		Verified: user.Verified,
 		Blocked:  user.Blocked,
@@ -58,7 +64,7 @@ func decodeBasicAuth(basicAuth string) (string, string, error) {
 
 // ------------------------------------------------------------------------------------------------------------
 type createUserRequest struct {
-	Fullname string `json:"fullname" binding:"required,gte=3,lt=254"`
+	Fullname string `json:"fullname" binding:"required,gte=3,lte=255"`
 	Email    string `json:"email" binding:"required,email,lowercase,lt=320"`
 	Username string `json:"username" binding:"required,alphanum,lowercase,gte=3,lte=60"`
 	Password string `json:"password" binding:"required,gte=8,lte=320"`
@@ -82,7 +88,7 @@ func (server *HttpServer) createUser(ctx *gin.Context) {
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "user with email or username already exists"})
+				ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "user with same email or username already exists"})
 				return
 			}
 		}
@@ -99,12 +105,11 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken           string         `json:"access_token"`
-	RefreshToken          string         `json:"refresh_token"`
-	SessionId             uuid.UUID      `json:"session_id"`
-	AccessTokenExpiresAt  time.Time      `json:"access_token_expires_at"`
-	RefreshTokenExpiresAt time.Time      `json:"refresh_token_expires_at"`
-	User                  userAsResponse `json:"user"`
+	AccessToken           string    `json:"access_token"`
+	RefreshToken          string    `json:"refresh_token"`
+	SessionId             uuid.UUID `json:"session_id"`
+	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
+	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
 }
 type Username struct {
 	Username string `json:"username" validate:"lowercase,alphanum,gte=3,lte=320"`
@@ -113,7 +118,7 @@ type Email struct {
 	Email string `json:"email" validate:"lowercase,email,lte=320"`
 }
 type Password struct {
-	Password string `json:"password" validate:"gte=8,lte=255"`
+	Password string `json:"password" validate:"gte=8,lte=320"`
 }
 
 func (server *HttpServer) loginUser(ctx *gin.Context) {
@@ -130,7 +135,6 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	}
 
 	validate := validator.New()
-
 	password := Password{Password: decodedPass}
 	err = validate.Struct(password)
 	if err != nil {
@@ -138,7 +142,8 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	var dbuser repo.CoreUser
+	var dbuser repo.User
+
 	if strings.Contains(decodedIdentifier, "@") {
 		email := Email{Email: decodedIdentifier}
 		err = validate.Struct(email)
@@ -146,7 +151,9 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
+
 		dbuser, err = server.store.GetUserWhereEmail(ctx, email.Email)
+
 	} else {
 		username := Username{Username: decodedIdentifier}
 		err = validate.Struct(username)
@@ -154,32 +161,35 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
+
 		dbuser, err = server.store.GetUserWhereUsername(ctx, username.Username)
 	}
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid credentials "})
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: INVALID_CREDENTAILS})
 			return
 		}
+
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	// This will send back error if password do not match
 
+	// This will send back error if password do not match
 	err = utils.VerifyPassword(password.Password, dbuser.Password)
+
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid credentials"})
+		ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: INVALID_CREDENTAILS})
 		return
 	}
 
 	// create access token
-	access_token, accessPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.ID), server.config.AccessTokenDuration)
+	access_token, accessPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%v", dbuser.ID), server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	refresh_token, refreshPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%d", dbuser.ID), server.config.RefreshTokenDuration)
+	refresh_token, refreshPayload, err := server.tokenBuilder.CreateToken(fmt.Sprintf("%v", dbuser.ID), server.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -199,12 +209,11 @@ func (server *HttpServer) loginUser(ctx *gin.Context) {
 	}
 
 	loginResponse := loginUserResponse{
-		SessionId:             session.ID,
-		AccessToken:           access_token,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
 		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
 		RefreshToken:          refresh_token,
-		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                  removePassword(dbuser),
+		AccessToken:           access_token,
+		SessionId:             session.ID,
 	}
 
 	ctx.JSON(http.StatusOK, loginResponse)
@@ -239,6 +248,22 @@ func (server *HttpServer) deleteUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
 		return
 	}
+
+	// Before Deleting Users we need to delete all the tables created by users
+	tables, err := server.store.GetTablesWhereUser(ctx, int64(UserId))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	// We will loop over tabels and delete each table
+	for _, table := range tables {
+		err := server.store.DropTableTx(ctx, repo.Name{Value: table.Name})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			return
+		}
+	}
+	// No we can delete the user
 	err = server.store.DeleteUser(ctx, int64(UserId))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})

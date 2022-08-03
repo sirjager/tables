@@ -1,12 +1,12 @@
--- -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
+-- -------------------------- ADD ONE TO -> _SESSIONS --------------------------
 
 -- name: CreateSession :one
-INSERT INTO "public"."core_sessions" 
+INSERT INTO "public"."_sessions" 
 (id,user_id,client_ip,user_agent,refresh_token,blocked,expires) 
 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 
--- -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
+-- -------------------------- GET ONE FROM <- _SESSIONS --------------------------
 
 -- name: GetSession :one
-SELECT * FROM "public"."core_sessions" WHERE id = $1 LIMIT 1;
+SELECT * FROM "public"."_sessions" WHERE id = $1 LIMIT 1;

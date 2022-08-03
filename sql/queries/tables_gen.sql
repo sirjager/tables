@@ -1,47 +1,48 @@
--- ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
+-- ------------------------------ GET MULTIPLE _TABLES <== [_TABLES] ------------------------------
 
 -- name: GetAllTables :many
-SELECT * FROM "public"."core_tables";
+SELECT * FROM "public"."_tables";
 
 -- name: GetSomeTables :many
-SELECT * FROM "public"."core_tables" LIMIT @limit_::int OFFSET @offset_::int;
+SELECT * FROM "public"."_tables" LIMIT @limit_::int OFFSET @offset_::int;
 
 
--- --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
+-- --------------------- GET MULTIPLE _TABLES OF _USERS.user_id <== [_TABLES] ---------------------
 
 -- name: GetTablesWhereUser :many
-SELECT * FROM "public"."core_tables" WHERE user_id = $1;
+SELECT * FROM "public"."_tables" WHERE user_id = $1;
 
 -- name: GetSomeTablesWhereUser :many
-SELECT * FROM "public"."core_tables" WHERE user_id = $1 LIMIT @limit_::int OFFSET @offset_::int;
+SELECT * FROM "public"."_tables" WHERE user_id = $1 LIMIT @limit_::int OFFSET @offset_::int;
 
 
--- -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
+-- -------------------------- GET ONE _TABLES <- _TABLES --------------------------
 
--- name: GetTableWhereNameAndUser :one
-SELECT * FROM "public"."core_tables" WHERE name = $1 AND user_id = $2 LIMIT 1;
+-- name: GetTableWhereName :one
+SELECT * FROM "public"."_tables" WHERE name = $1 LIMIT 1;
 
--- -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
+-- name: GetTableByUserIdAndTableName :one
+SELECT * FROM "public"."_tables" WHERE user_id = $1 AND name = $2 LIMIT 1;
+
+
+-- -------------------------- ADD _TABLES <-> _TABLES --------------------------
 
 -- name: CreateTable :one
-INSERT INTO "public"."core_tables" (name,user_id,columns) VALUES ($1, $2, $3) RETURNING *;
+INSERT INTO "public"."_tables" (name,user_id,columns) VALUES ($1, $2, $3) RETURNING *;
 
 
--- -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
-
--- name: DeleteTable :exec
-DELETE FROM "public"."core_tables" WHERE id = $1;
+-- -------------------------- REMOVE _TABLES <-> _TABLES --------------------------
 
 -- name: DeleteTablesWhereUser :exec
-DELETE FROM "public"."core_tables" WHERE user_id = $1;
+DELETE FROM "public"."_tables" WHERE user_id = $1;
 
--- name: DeleteTableWhereUserAndName :exec
-DELETE FROM "public"."core_tables" WHERE user_id = $1 AND name = $2;
+-- name: DeleteTableWhereName :exec
+DELETE FROM "public"."_tables" WHERE name = $1;
 
 
--- -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
+-- -------------------------- UPDATE _TABLES <-> _TABLES --------------------------
 
 -- name: UpdateTableColumns :one
-UPDATE "public"."core_tables" SET columns = $1 WHERE id = $2 RETURNING *;
+UPDATE "public"."_tables" SET columns = $1 WHERE id = $2 RETURNING *;
 
 

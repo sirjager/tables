@@ -11,7 +11,7 @@ import (
 
 const createTable = `-- name: CreateTable :one
 
-INSERT INTO "public"."core_tables" (name,user_id,columns) VALUES ($1, $2, $3) RETURNING id, user_id, name, columns, created, updated
+INSERT INTO "public"."_tables" (name,user_id,columns) VALUES ($1, $2, $3) RETURNING id, user_id, name, columns, created, updated
 `
 
 type CreateTableParams struct {
@@ -20,10 +20,10 @@ type CreateTableParams struct {
 	Columns string `json:"columns"`
 }
 
-// -------------------------- ADD CORE_TABLES <-> CORE_TABLES --------------------------
-func (q *Queries) CreateTable(ctx context.Context, arg CreateTableParams) (CoreTable, error) {
+// -------------------------- ADD _TABLES <-> _TABLES --------------------------
+func (q *Queries) CreateTable(ctx context.Context, arg CreateTableParams) (Table, error) {
 	row := q.db.QueryRowContext(ctx, createTable, arg.Name, arg.UserID, arg.Columns)
-	var i CoreTable
+	var i Table
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -35,35 +35,21 @@ func (q *Queries) CreateTable(ctx context.Context, arg CreateTableParams) (CoreT
 	return i, err
 }
 
-const deleteTable = `-- name: DeleteTable :exec
-
-DELETE FROM "public"."core_tables" WHERE id = $1
+const deleteTableWhereName = `-- name: DeleteTableWhereName :exec
+DELETE FROM "public"."_tables" WHERE name = $1
 `
 
-// -------------------------- REMOVE CORE_TABLES <-> CORE_TABLES --------------------------
-func (q *Queries) DeleteTable(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTable, id)
-	return err
-}
-
-const deleteTableWhereUserAndName = `-- name: DeleteTableWhereUserAndName :exec
-DELETE FROM "public"."core_tables" WHERE user_id = $1 AND name = $2
-`
-
-type DeleteTableWhereUserAndNameParams struct {
-	UserID int64  `json:"user_id"`
-	Name   string `json:"name"`
-}
-
-func (q *Queries) DeleteTableWhereUserAndName(ctx context.Context, arg DeleteTableWhereUserAndNameParams) error {
-	_, err := q.db.ExecContext(ctx, deleteTableWhereUserAndName, arg.UserID, arg.Name)
+func (q *Queries) DeleteTableWhereName(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, deleteTableWhereName, name)
 	return err
 }
 
 const deleteTablesWhereUser = `-- name: DeleteTablesWhereUser :exec
-DELETE FROM "public"."core_tables" WHERE user_id = $1
+
+DELETE FROM "public"."_tables" WHERE user_id = $1
 `
 
+// -------------------------- REMOVE _TABLES <-> _TABLES --------------------------
 func (q *Queries) DeleteTablesWhereUser(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteTablesWhereUser, userID)
 	return err
@@ -71,19 +57,19 @@ func (q *Queries) DeleteTablesWhereUser(ctx context.Context, userID int64) error
 
 const getAllTables = `-- name: GetAllTables :many
 
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables"
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables"
 `
 
-// ------------------------------ GET MULTIPLE CORE_TABLES <== [CORE_TABLES] ------------------------------
-func (q *Queries) GetAllTables(ctx context.Context) ([]CoreTable, error) {
+// ------------------------------ GET MULTIPLE _TABLES <== [_TABLES] ------------------------------
+func (q *Queries) GetAllTables(ctx context.Context) ([]Table, error) {
 	rows, err := q.db.QueryContext(ctx, getAllTables)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CoreTable{}
+	items := []Table{}
 	for rows.Next() {
-		var i CoreTable
+		var i Table
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -106,7 +92,7 @@ func (q *Queries) GetAllTables(ctx context.Context) ([]CoreTable, error) {
 }
 
 const getSomeTables = `-- name: GetSomeTables :many
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" LIMIT $2::int OFFSET $1::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables" LIMIT $2::int OFFSET $1::int
 `
 
 type GetSomeTablesParams struct {
@@ -114,15 +100,15 @@ type GetSomeTablesParams struct {
 	Limit  int32 `json:"limit_"`
 }
 
-func (q *Queries) GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([]CoreTable, error) {
+func (q *Queries) GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([]Table, error) {
 	rows, err := q.db.QueryContext(ctx, getSomeTables, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CoreTable{}
+	items := []Table{}
 	for rows.Next() {
-		var i CoreTable
+		var i Table
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -145,7 +131,7 @@ func (q *Queries) GetSomeTables(ctx context.Context, arg GetSomeTablesParams) ([
 }
 
 const getSomeTablesWhereUser = `-- name: GetSomeTablesWhereUser :many
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE user_id = $1 LIMIT $3::int OFFSET $2::int
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables" WHERE user_id = $1 LIMIT $3::int OFFSET $2::int
 `
 
 type GetSomeTablesWhereUserParams struct {
@@ -154,15 +140,15 @@ type GetSomeTablesWhereUserParams struct {
 	Limit  int32 `json:"limit_"`
 }
 
-func (q *Queries) GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]CoreTable, error) {
+func (q *Queries) GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesWhereUserParams) ([]Table, error) {
 	rows, err := q.db.QueryContext(ctx, getSomeTablesWhereUser, arg.UserID, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CoreTable{}
+	items := []Table{}
 	for rows.Next() {
-		var i CoreTable
+		var i Table
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -184,20 +170,38 @@ func (q *Queries) GetSomeTablesWhereUser(ctx context.Context, arg GetSomeTablesW
 	return items, nil
 }
 
-const getTableWhereNameAndUser = `-- name: GetTableWhereNameAndUser :one
-
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE name = $1 AND user_id = $2 LIMIT 1
+const getTableByUserIdAndTableName = `-- name: GetTableByUserIdAndTableName :one
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables" WHERE user_id = $1 AND name = $2 LIMIT 1
 `
 
-type GetTableWhereNameAndUserParams struct {
-	Name   string `json:"name"`
+type GetTableByUserIdAndTableNameParams struct {
 	UserID int64  `json:"user_id"`
+	Name   string `json:"name"`
 }
 
-// -------------------------- GET ONE CORE_TABLES <- CORE_TABLES --------------------------
-func (q *Queries) GetTableWhereNameAndUser(ctx context.Context, arg GetTableWhereNameAndUserParams) (CoreTable, error) {
-	row := q.db.QueryRowContext(ctx, getTableWhereNameAndUser, arg.Name, arg.UserID)
-	var i CoreTable
+func (q *Queries) GetTableByUserIdAndTableName(ctx context.Context, arg GetTableByUserIdAndTableNameParams) (Table, error) {
+	row := q.db.QueryRowContext(ctx, getTableByUserIdAndTableName, arg.UserID, arg.Name)
+	var i Table
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Columns,
+		&i.Created,
+		&i.Updated,
+	)
+	return i, err
+}
+
+const getTableWhereName = `-- name: GetTableWhereName :one
+
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables" WHERE name = $1 LIMIT 1
+`
+
+// -------------------------- GET ONE _TABLES <- _TABLES --------------------------
+func (q *Queries) GetTableWhereName(ctx context.Context, name string) (Table, error) {
+	row := q.db.QueryRowContext(ctx, getTableWhereName, name)
+	var i Table
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -211,19 +215,19 @@ func (q *Queries) GetTableWhereNameAndUser(ctx context.Context, arg GetTableWher
 
 const getTablesWhereUser = `-- name: GetTablesWhereUser :many
 
-SELECT id, user_id, name, columns, created, updated FROM "public"."core_tables" WHERE user_id = $1
+SELECT id, user_id, name, columns, created, updated FROM "public"."_tables" WHERE user_id = $1
 `
 
-// --------------------- GET MULTIPLE CORE_TABLES OF CORE_USERS.user_id <== [CORE_TABLES] ---------------------
-func (q *Queries) GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreTable, error) {
+// --------------------- GET MULTIPLE _TABLES OF _USERS.user_id <== [_TABLES] ---------------------
+func (q *Queries) GetTablesWhereUser(ctx context.Context, userID int64) ([]Table, error) {
 	rows, err := q.db.QueryContext(ctx, getTablesWhereUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CoreTable{}
+	items := []Table{}
 	for rows.Next() {
-		var i CoreTable
+		var i Table
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -247,7 +251,7 @@ func (q *Queries) GetTablesWhereUser(ctx context.Context, userID int64) ([]CoreT
 
 const updateTableColumns = `-- name: UpdateTableColumns :one
 
-UPDATE "public"."core_tables" SET columns = $1 WHERE id = $2 RETURNING id, user_id, name, columns, created, updated
+UPDATE "public"."_tables" SET columns = $1 WHERE id = $2 RETURNING id, user_id, name, columns, created, updated
 `
 
 type UpdateTableColumnsParams struct {
@@ -255,10 +259,10 @@ type UpdateTableColumnsParams struct {
 	ID      int64  `json:"id"`
 }
 
-// -------------------------- UPDATE CORE_TABLES <-> CORE_TABLES --------------------------
-func (q *Queries) UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (CoreTable, error) {
+// -------------------------- UPDATE _TABLES <-> _TABLES --------------------------
+func (q *Queries) UpdateTableColumns(ctx context.Context, arg UpdateTableColumnsParams) (Table, error) {
 	row := q.db.QueryRowContext(ctx, updateTableColumns, arg.Columns, arg.ID)
-	var i CoreTable
+	var i Table
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

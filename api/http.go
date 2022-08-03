@@ -57,10 +57,13 @@ func (server *HttpServer) setupHttpRouter() {
 	router := gin.New()
 	router.Use(middlewares.Logger())
 	router.Use(middlewares.CORSMiddleware())
+
 	authenticatedRoute := router.Group("/")
 	unauthenticatedRoute := router.Group("/")
+	onlyAdminCanAccessRoute := router.Group("/")
 
 	// Middlewares
+	onlyAdminCanAccessRoute.Use(middlewares.HasAdminPass())
 	authenticatedRoute.Use(middlewares.BasicAuth(server.tokenBuilder))
 
 	// UnAuthenticated Route
@@ -68,8 +71,10 @@ func (server *HttpServer) setupHttpRouter() {
 	unauthenticatedRoute.POST("/users/signin", server.loginUser)
 	unauthenticatedRoute.POST("/users/renew-access", server.renewAccessToken)
 
-	// Authenticated Route
-	authenticatedRoute.GET("/users", server.listUsers)
+	//* Authenticated Route
+
+	onlyAdminCanAccessRoute.GET("/users", server.listUsers)
+
 	authenticatedRoute.GET("/users/me", server.getUser)
 	authenticatedRoute.DELETE("/users/me", server.deleteUser)
 
@@ -86,6 +91,7 @@ func (server *HttpServer) setupHttpRouter() {
 	// Manage Rows
 	authenticatedRoute.GET("/tables/:table/rows", server.getRows)
 	authenticatedRoute.POST("/tables/:table/rows", server.insertRows)
+	authenticatedRoute.PATCH("/tables/:table/rows", server.updateRows)
 	authenticatedRoute.DELETE("/tables/:table/rows", server.deleteRows)
 
 	server.router = router

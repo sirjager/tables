@@ -14,7 +14,7 @@ import (
 
 const createSession = `-- name: CreateSession :one
 
-INSERT INTO "public"."core_sessions" 
+INSERT INTO "public"."_sessions" 
 (id,user_id,client_ip,user_agent,refresh_token,blocked,expires) 
 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created
 `
@@ -29,8 +29,8 @@ type CreateSessionParams struct {
 	Expires      time.Time `json:"expires"`
 }
 
-// -------------------------- ADD ONE TO -> CORE_SESSIONS --------------------------
-func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (CoreSession, error) {
+// -------------------------- ADD ONE TO -> _SESSIONS --------------------------
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
 	row := q.db.QueryRowContext(ctx, createSession,
 		arg.ID,
 		arg.UserID,
@@ -40,7 +40,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 		arg.Blocked,
 		arg.Expires,
 	)
-	var i CoreSession
+	var i Session
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -56,13 +56,13 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (C
 
 const getSession = `-- name: GetSession :one
 
-SELECT id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created FROM "public"."core_sessions" WHERE id = $1 LIMIT 1
+SELECT id, user_id, client_ip, user_agent, refresh_token, blocked, expires, created FROM "public"."_sessions" WHERE id = $1 LIMIT 1
 `
 
-// -------------------------- GET ONE FROM <- CORE_SESSIONS --------------------------
-func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (CoreSession, error) {
+// -------------------------- GET ONE FROM <- _SESSIONS --------------------------
+func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (Session, error) {
 	row := q.db.QueryRowContext(ctx, getSession, id)
-	var i CoreSession
+	var i Session
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
