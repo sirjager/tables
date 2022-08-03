@@ -1,20 +1,19 @@
-
-# Tables
+<img style="float:right;" src="assets/backend.png" height="60px" width="60px">
+<h1 style="font-size:40px;font-weight:900;">Tables Got Your Back 
+</h1>
 
 [![Test](https://github.com/SirJager/tables/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/SirJager/tables/actions/workflows/test.yml)
 
-Tables allows you to manage you database tables in a more easier way .
+Tables allows you to manage your backend database a more easier way .
 
-- [@SirJager](https://www.github.com/SirJager)
 
 ## 🚀 What Next
 
-- Update Rows
 - Make tests
 - Add, Remove Update Primary Keys
 - Add, Remove Update Foreign Keys
 - Build a front end
-- Join Operations (maybe)
+- Join Operations
 
 ## Tech Stack
 
