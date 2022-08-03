@@ -12,6 +12,7 @@ type ServerConfig struct {
 	DBSource             string        `mapstructure:"DATABASE_URL"`
 	MigrationURL         string        `mapstructure:"MIGRATION_URL"`
 	TokenSecretKey       string        `mapstructure:"TOKEN_SECRET_KEY"`
+	AdminSecretKey       string        `mapstructure:"ADMIN_SECRET_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
