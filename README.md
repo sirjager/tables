@@ -1,4 +1,4 @@
-<img style="float:right;" src="assets/backend.png" height="60px" width="60px">
+<p style="float:right;"><img src="assets/backend.png" height="60px" width="60px"></p>
 <h1 style="font-size:40px;font-weight:900;">Tables Got Your Back 
 </h1>
 
