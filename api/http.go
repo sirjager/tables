@@ -42,6 +42,7 @@ func NewHttpServer(store repo.Store, db *sql.DB, cfg config.ServerConfig) (*Http
 }
 
 func (server *HttpServer) Start(address string) error {
+
 	return server.router.Run(address)
 }
 

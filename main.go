@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 
@@ -20,22 +21,24 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not load server conifg :", err)
 	}
+
 	conn, conn_err := sql.Open(strings.Split(c.DBSource, ":")[0], c.DBSource)
 
 	if conn_err != nil {
 		panic(conn_err)
 	}
 	runDBMigration(c.MigrationURL, c.DBSource)
-
 	store := repo.NewStore(conn)
 	httpServer, err := api.NewHttpServer(store, conn, c)
 	if err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
-	err = httpServer.Start(":" + c.Port)
-	if err != nil {
+
+	if err = httpServer.Start(":" + c.Port); err != nil {
 		log.Fatal("Could not start http server:", err)
 	}
+	fmt.Println("started server")
+
 }
 
 func runDBMigration(migrationURL string, dbSource string) {
