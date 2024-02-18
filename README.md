@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/SirJager/tables/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/SirJager/tables/actions/workflows/test.yml)
 
-Tables allows you to manage your backend database a more easier way .
+Tables allows you to manage your backend database a more easier way by providing rest api to access your database tables
 
 ## [Try Api In Postman](https://postman.com/cloudy-spaceship-448418/workspace/go/documentation/16177687-58151bd4-c7b4-402b-a5d2-c871455d2c5a)
 
